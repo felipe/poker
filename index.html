@@ -437,6 +437,8 @@ const breakdownEl = document.getElementById("breakdown");
 
 let myHand = [];
 let dealt = false;
+let lastUserChoice = null;
+let resultsVisible = false;
 
 function renderCards(cards) {
   cardsEl.innerHTML = "";
@@ -463,6 +465,8 @@ function variantHoleCount() { return VARIANTS[variantSel.value].hole; }
 function reset() {
   myHand = [];
   dealt = false;
+  lastUserChoice = null;
+  resultsVisible = false;
   renderCards([]);
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
@@ -470,27 +474,38 @@ function reset() {
   breakdownEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
+  variantSel.disabled = false;
 }
 
 function deal() {
   const deck = shuffle(makeDeck());
   myHand = deck.slice(0, variantHoleCount());
   dealt = true;
+  resultsVisible = false;
+  lastUserChoice = null;
   renderCards(myHand);
   resultEl.classList.add("hidden");
+  breakdownEl.innerHTML = "";
   callActions.style.display = "flex";
   statusEl.textContent = "Play or fold?";
   dealBtn.disabled = true;
+  variantSel.disabled = false;
 }
 
 async function handleCall(userChoice) {
+  lastUserChoice = userChoice;
+  callActions.style.display = "none";
+  await runSimulationAndRender();
+  dealBtn.disabled = false;
+  dealBtn.textContent = "Deal again";
+}
+
+async function runSimulationAndRender() {
   const numPlayers = parseInt(playersSel.value, 10);
   const numOpponents = numPlayers - 1;
   const variant = variantSel.value;
 
-  callActions.style.display = "none";
   statusEl.textContent = "Simulating 10,000 hands…";
-  // Yield so the status renders before the heavy loop
   await new Promise(r => setTimeout(r, 20));
 
   const t0 = performance.now();
@@ -500,7 +515,7 @@ async function handleCall(userChoice) {
   const threshold = 1 / numPlayers;
   const shouldPlay = winRate > threshold;
   const verdict = shouldPlay ? "PLAY" : "FOLD";
-  const userPlay = userChoice === "play";
+  const userPlay = lastUserChoice === "play";
   const correct = userPlay === shouldPlay;
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
@@ -508,15 +523,14 @@ async function handleCall(userChoice) {
   verdictEl.textContent = verdict;
   verdictEl.className = "result-val verdict " + (shouldPlay ? "play" : "fold");
   feedbackEl.textContent = correct
-    ? `Correct — you chose ${userChoice.toUpperCase()}.`
+    ? `Correct — you chose ${lastUserChoice.toUpperCase()}.`
     : `Off this time — the math says ${verdict}.`;
   feedbackEl.className = "feedback " + (correct ? "right" : "wrong");
   renderBreakdown(distribution, variant);
   resultEl.classList.remove("hidden");
-  statusEl.textContent = `Done in ${elapsed}s. Click Deal for another hand.`;
-
-  dealBtn.disabled = false;
-  dealBtn.textContent = "Deal again";
+  resultsVisible = true;
+  variantSel.disabled = true;
+  statusEl.textContent = `Done in ${elapsed}s. Change players to re-run, or click Deal for another hand.`;
 }
 
 function renderBreakdown(distribution, variant) {
@@ -542,7 +556,9 @@ dealBtn.addEventListener("click", deal);
 playBtn.addEventListener("click", () => handleCall("play"));
 foldBtn.addEventListener("click", () => handleCall("fold"));
 variantSel.addEventListener("change", reset);
-playersSel.addEventListener("change", () => { if (dealt) statusEl.textContent = "Player count changed — current hand still valid."; });
+playersSel.addEventListener("change", () => {
+  if (resultsVisible) runSimulationAndRender();
+});
 
 reset();
 </script>
