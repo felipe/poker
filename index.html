@@ -156,12 +156,14 @@
   }
   .bar-name { color: var(--ink); }
   .bar-track {
+    display: block;
     height: 8px;
     background: #1f3327;
     border-radius: 4px;
     overflow: hidden;
   }
   .bar-fill {
+    display: block;
     height: 100%;
     background: var(--accent);
     border-radius: 4px;
@@ -435,6 +437,8 @@ const breakdownEl = document.getElementById("breakdown");
 
 let myHand = [];
 let dealt = false;
+let lastUserChoice = null;
+let resultsVisible = false;
 
 function renderCards(cards) {
   cardsEl.innerHTML = "";
@@ -458,9 +462,30 @@ function renderCards(cards) {
 
 function variantHoleCount() { return VARIANTS[variantSel.value].hole; }
 
+function maxPlayersForVariant(key) {
+  const v = VARIANTS[key];
+  // Cards available for opponents after removing user's hole cards and the board.
+  // Each opponent takes `v.hole` cards. Cap at 10 (the UI maximum).
+  const maxOpponents = Math.floor((52 - v.hole - v.board) / v.hole);
+  return Math.min(10, 1 + maxOpponents);
+}
+
+function applyPlayerCap() {
+  const max = maxPlayersForVariant(variantSel.value);
+  for (const opt of playersSel.options) {
+    const v = parseInt(opt.value || opt.text, 10);
+    opt.disabled = v > max;
+  }
+  if (parseInt(playersSel.value, 10) > max) {
+    playersSel.value = String(max);
+  }
+}
+
 function reset() {
   myHand = [];
   dealt = false;
+  lastUserChoice = null;
+  resultsVisible = false;
   renderCards([]);
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
@@ -468,37 +493,58 @@ function reset() {
   breakdownEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
+  variantSel.disabled = false;
+  playersSel.disabled = false;
+  applyPlayerCap();
 }
 
 function deal() {
   const deck = shuffle(makeDeck());
   myHand = deck.slice(0, variantHoleCount());
   dealt = true;
+  resultsVisible = false;
+  lastUserChoice = null;
   renderCards(myHand);
   resultEl.classList.add("hidden");
+  breakdownEl.innerHTML = "";
   callActions.style.display = "flex";
   statusEl.textContent = "Play or fold?";
   dealBtn.disabled = true;
+  variantSel.disabled = false;
 }
 
 async function handleCall(userChoice) {
+  lastUserChoice = userChoice;
+  callActions.style.display = "none";
+  await runSimulationAndRender();
+}
+
+async function runSimulationAndRender() {
+  // Snapshot inputs before yielding so a Deal click or anything else
+  // during the await can't change the simulation's effective parameters.
   const numPlayers = parseInt(playersSel.value, 10);
   const numOpponents = numPlayers - 1;
   const variant = variantSel.value;
+  const handForRun = myHand;
+  const choiceForRun = lastUserChoice;
 
-  callActions.style.display = "none";
+  // Lock all controls BEFORE the yield so no resets, deals, or variant
+  // changes can race against the in-flight simulation.
+  variantSel.disabled = true;
+  playersSel.disabled = true;
+  dealBtn.disabled = true;
+
   statusEl.textContent = "Simulating 10,000 hands…";
-  // Yield so the status renders before the heavy loop
   await new Promise(r => setTimeout(r, 20));
 
   const t0 = performance.now();
-  const { winRate, distribution } = simulate(myHand, numOpponents, variant, 10000);
+  const { winRate, distribution } = simulate(handForRun, numOpponents, variant, 10000);
   const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
 
   const threshold = 1 / numPlayers;
   const shouldPlay = winRate > threshold;
   const verdict = shouldPlay ? "PLAY" : "FOLD";
-  const userPlay = userChoice === "play";
+  const userPlay = choiceForRun === "play";
   const correct = userPlay === shouldPlay;
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
@@ -506,13 +552,17 @@ async function handleCall(userChoice) {
   verdictEl.textContent = verdict;
   verdictEl.className = "result-val verdict " + (shouldPlay ? "play" : "fold");
   feedbackEl.textContent = correct
-    ? `Correct — you chose ${userChoice.toUpperCase()}.`
+    ? `Correct — you chose ${choiceForRun.toUpperCase()}.`
     : `Off this time — the math says ${verdict}.`;
   feedbackEl.className = "feedback " + (correct ? "right" : "wrong");
   renderBreakdown(distribution, variant);
   resultEl.classList.remove("hidden");
-  statusEl.textContent = `Done in ${elapsed}s. Click Deal for another hand.`;
+  resultsVisible = true;
+  statusEl.textContent = `Done in ${elapsed}s. Change players to re-run, or click Deal for another hand.`;
 
+  // Re-open the controls that should be live while results are showing.
+  // Variant stays locked until the user starts a new deal.
+  playersSel.disabled = false;
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
 }
@@ -520,20 +570,19 @@ async function handleCall(userChoice) {
 function renderBreakdown(distribution, variant) {
   const locked = VARIANTS[variant].board === 0;
   const title = locked ? "Your hand" : "Hands you'll likely make";
-  const rows = [];
-  for (let i = 8; i >= 0; i--) {
-    const p = distribution[i];
-    if (p < 0.005) continue;
+  const ordered = distribution
+    .map((p, i) => ({ p, i }))
+    .filter(x => x.p >= 0.005)
+    .sort((a, b) => b.p - a.p);
+  const rows = ordered.map(({ p, i }) => {
     const pct = (p * 100).toFixed(p >= 0.1 ? 0 : 1) + "%";
     const w = Math.max(p * 100, 2);
-    rows.push(
-      `<div class="bar-row">
-        <span class="bar-name">${CATEGORY_NAMES[i]}</span>
-        <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
-        <span class="bar-pct">${pct}</span>
-      </div>`
-    );
-  }
+    return `<div class="bar-row">
+      <span class="bar-name">${CATEGORY_NAMES[i]}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
+      <span class="bar-pct">${pct}</span>
+    </div>`;
+  });
   breakdownEl.innerHTML = `<div class="breakdown-title">${title}</div>${rows.join("")}`;
 }
 
@@ -541,7 +590,9 @@ dealBtn.addEventListener("click", deal);
 playBtn.addEventListener("click", () => handleCall("play"));
 foldBtn.addEventListener("click", () => handleCall("fold"));
 variantSel.addEventListener("change", reset);
-playersSel.addEventListener("change", () => { if (dealt) statusEl.textContent = "Player count changed — current hand still valid."; });
+playersSel.addEventListener("change", () => {
+  if (resultsVisible) runSimulationAndRender();
+});
 
 reset();
 </script>
