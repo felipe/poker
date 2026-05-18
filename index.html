@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Hand Advisor</title>
+<style>
+  :root {
+    --bg: #0e1a14;
+    --panel: #16271e;
+    --ink: #e8f0ea;
+    --muted: #94a59b;
+    --accent: #ffd166;
+    --good: #4ade80;
+    --bad: #f87171;
+    --card-bg: #fafafa;
+    --card-black: #1a1a1a;
+    --card-red: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
+  .panel {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .control { flex: 1; min-width: 140px; }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  select, button {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #2a3f33;
+    background: #0e1a14;
+    color: var(--ink);
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button {
+    border: none;
+    font-weight: 600;
+    transition: transform 0.05s, opacity 0.15s;
+  }
+  button:hover:not(:disabled) { opacity: 0.9; }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #1a1a1a; }
+  .btn-play { background: var(--good); color: #0a1f10; }
+  .btn-fold { background: var(--bad); color: #2a0a0a; }
+  .actions { display: flex; gap: 10px; margin-top: 12px; }
+  .actions button { flex: 1; }
+
+  .cards {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    min-height: 140px;
+    align-items: center;
+    margin: 20px 0;
+  }
+  .card {
+    width: 88px;
+    height: 124px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .card.red { color: var(--card-red); }
+  .card.black { color: var(--card-black); }
+  .card .top { font-size: 1.5rem; line-height: 1; }
+  .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
+  .card .bot { font-size: 1.5rem; text-align: right; line-height: 1; transform: rotate(180deg); }
+  .card.placeholder {
+    background: transparent;
+    border: 2px dashed #2a3f33;
+    box-shadow: none;
+  }
+
+  .result {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #0e1a14;
+    border: 1px solid #2a3f33;
+  }
+  .result.hidden { display: none; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #1f3327;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { color: var(--muted); }
+  .result-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .verdict { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.05em; }
+  .verdict.play { color: var(--good); }
+  .verdict.fold { color: var(--bad); }
+  .feedback {
+    margin-top: 10px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .feedback.right { color: var(--good); }
+  .feedback.wrong { color: var(--bad); }
+  .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<h1>Poker Hand Advisor</h1>
+<p class="sub">Pick a variant and player count, deal your hand, then call play or fold.<br>
+The app runs 10,000 simulated hands and tells you if you were right.</p>
+
+<div class="panel">
+  <div class="controls">
+    <div class="control">
+      <label for="variant">Variant</label>
+      <select id="variant">
+        <option value="holdem" selected>Texas Hold'em</option>
+        <option value="fivecard">5-Card Draw</option>
+        <option value="sevenstud">7-Card Stud</option>
+      </select>
+    </div>
+    <div class="control">
+      <label for="players">Players (total)</label>
+      <select id="players">
+        <option>2</option><option>3</option><option>4</option>
+        <option value="5" selected>5</option>
+        <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="cards" class="cards"></div>
+
+  <button id="deal" class="btn-primary">Deal</button>
+  <div class="actions" id="callActions" style="display:none">
+    <button id="play" class="btn-play">Play</button>
+    <button id="fold" class="btn-fold">Fold</button>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div id="result" class="result hidden">
+    <div class="result-row">
+      <span class="result-label">Your win %</span>
+      <span class="result-val" id="winPct">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Fair share (1 / players)</span>
+      <span class="result-val" id="threshold">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Verdict</span>
+      <span class="result-val verdict" id="verdict">—</span>
+    </div>
+    <div id="feedback" class="feedback"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ---------- cards ----------
+const SUITS = ["s", "h", "d", "c"];
+const SUIT_GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
+const SUIT_COLOR = { s: "black", c: "black", h: "red", d: "red" };
+const RANK_GLYPH = { 11: "J", 12: "Q", 13: "K", 14: "A" };
+const rankToStr = r => RANK_GLYPH[r] || String(r);
+
+function makeDeck() {
+  const d = [];
+  for (let r = 2; r <= 14; r++)
+    for (let s = 0; s < 4; s++)
+      d.push({ rank: r, suit: s });
+  return d;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+// ---------- hand evaluator ----------
+// Score = category * 10^10 + 5 kickers (2 digits each, ranks 2..14).
+// Higher score wins. Accepts 5..7 cards.
+function evaluate(cards) {
+  const rankCount = new Array(15).fill(0);
+  const suitCount = new Array(4).fill(0);
+  const bySuit = [[], [], [], []];
+  for (const c of cards) {
+    rankCount[c.rank]++;
+    suitCount[c.suit]++;
+    bySuit[c.suit].push(c.rank);
+  }
+
+  // Flush
+  let flushSuit = -1;
+  for (let s = 0; s < 4; s++) if (suitCount[s] >= 5) flushSuit = s;
+
+  // Straight: highest top-rank of 5 consecutive
+  function highestStraight(rankSet) {
+    // rankSet: array of unique ranks present (booleans indexed 2..14)
+    // Ace can also be low (treat as 1) — check 5-high straight separately.
+    for (let top = 14; top >= 5; top--) {
+      if (rankSet[top] && rankSet[top-1] && rankSet[top-2] && rankSet[top-3] && rankSet[top-4]) {
+        return top;
+      }
+    }
+    // wheel: A-2-3-4-5
+    if (rankSet[14] && rankSet[2] && rankSet[3] && rankSet[4] && rankSet[5]) return 5;
+    return 0;
+  }
+
+  const presentSet = new Array(15).fill(false);
+  for (let r = 2; r <= 14; r++) presentSet[r] = rankCount[r] > 0;
+  const straightTop = highestStraight(presentSet);
+
+  // Straight flush
+  let sfTop = 0;
+  if (flushSuit >= 0) {
+    const flushSet = new Array(15).fill(false);
+    for (const r of bySuit[flushSuit]) flushSet[r] = true;
+    sfTop = highestStraight(flushSet);
+  }
+
+  // Group ranks by count
+  const fours = [], threes = [], pairs = [], singles = [];
+  for (let r = 14; r >= 2; r--) {
+    if (rankCount[r] === 4) fours.push(r);
+    else if (rankCount[r] === 3) threes.push(r);
+    else if (rankCount[r] === 2) pairs.push(r);
+    else if (rankCount[r] === 1) singles.push(r);
+  }
+
+  function pack(category, kickers) {
+    // category: 0..8, kickers: array of up to 5 ranks (2..14)
+    const k = kickers.slice(0, 5);
+    while (k.length < 5) k.push(0);
+    let n = category;
+    for (const v of k) n = n * 100 + v;
+    return n;
+  }
+
+  // Straight flush
+  if (sfTop) return pack(8, [sfTop]);
+  // Four of a kind
+  if (fours.length) {
+    const four = fours[0];
+    let kicker = 0;
+    for (let r = 14; r >= 2; r--) if (r !== four && rankCount[r] > 0) { kicker = r; break; }
+    return pack(7, [four, kicker]);
+  }
+  // Full house: top trip + best pair (or second trip)
+  if (threes.length && (threes.length >= 2 || pairs.length)) {
+    const trip = threes[0];
+    const pairRank = threes[1] !== undefined ? threes[1] : pairs[0];
+    return pack(6, [trip, pairRank]);
+  }
+  // Flush
+  if (flushSuit >= 0) {
+    const flushRanks = bySuit[flushSuit].slice().sort((a, b) => b - a).slice(0, 5);
+    return pack(5, flushRanks);
+  }
+  // Straight
+  if (straightTop) return pack(4, [straightTop]);
+  // Three of a kind
+  if (threes.length) {
+    const trip = threes[0];
+    const kickers = [];
+    for (let r = 14; r >= 2 && kickers.length < 2; r--)
+      if (r !== trip && rankCount[r] > 0) kickers.push(r);
+    return pack(3, [trip, ...kickers]);
+  }
+  // Two pair
+  if (pairs.length >= 2) {
+    const [p1, p2] = pairs;
+    let kicker = 0;
+    for (let r = 14; r >= 2; r--) if (r !== p1 && r !== p2 && rankCount[r] > 0) { kicker = r; break; }
+    return pack(2, [p1, p2, kicker]);
+  }
+  // One pair
+  if (pairs.length === 1) {
+    const p = pairs[0];
+    const kickers = [];
+    for (let r = 14; r >= 2 && kickers.length < 3; r--)
+      if (r !== p && rankCount[r] > 0) kickers.push(r);
+    return pack(1, [p, ...kickers]);
+  }
+  // High card
+  const highs = [];
+  for (let r = 14; r >= 2 && highs.length < 5; r--)
+    if (rankCount[r] > 0) highs.push(r);
+  return pack(0, highs);
+}
+
+// ---------- variants ----------
+const VARIANTS = {
+  holdem:    { name: "Texas Hold'em", hole: 2, board: 5 },
+  fivecard:  { name: "5-Card Draw",   hole: 5, board: 0 },
+  sevenstud: { name: "7-Card Stud",   hole: 7, board: 0 },
+};
+
+// ---------- monte carlo ----------
+function simulate(myCards, numOpponents, variant, iterations) {
+  const v = VARIANTS[variant];
+  const fullDeck = makeDeck();
+  // Remove my cards from the deck
+  const myKey = new Set(myCards.map(c => c.rank * 4 + c.suit));
+  const remaining = fullDeck.filter(c => !myKey.has(c.rank * 4 + c.suit));
+
+  const oppCards = v.hole;
+  const boardCards = v.board;
+  const cardsNeeded = numOpponents * oppCards + boardCards;
+
+  let wins = 0;
+
+  for (let iter = 0; iter < iterations; iter++) {
+    // Partial Fisher-Yates: only shuffle the first `cardsNeeded` slots
+    for (let i = 0; i < cardsNeeded; i++) {
+      const j = i + ((Math.random() * (remaining.length - i)) | 0);
+      const t = remaining[i]; remaining[i] = remaining[j]; remaining[j] = t;
+    }
+
+    const board = remaining.slice(numOpponents * oppCards, numOpponents * oppCards + boardCards);
+    const myHand = myCards.concat(board);
+    const myScore = evaluate(myHand);
+
+    let winners = 1;
+    let beaten = false;
+    for (let o = 0; o < numOpponents; o++) {
+      const opp = remaining.slice(o * oppCards, (o + 1) * oppCards);
+      const oppScore = evaluate(opp.concat(board));
+      if (oppScore > myScore) { beaten = true; break; }
+      if (oppScore === myScore) winners++;
+    }
+    if (!beaten) wins += 1 / winners;
+  }
+  return wins / iterations;
+}
+
+// ---------- UI ----------
+const cardsEl = document.getElementById("cards");
+const dealBtn = document.getElementById("deal");
+const playBtn = document.getElementById("play");
+const foldBtn = document.getElementById("fold");
+const callActions = document.getElementById("callActions");
+const variantSel = document.getElementById("variant");
+const playersSel = document.getElementById("players");
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+const winPctEl = document.getElementById("winPct");
+const thresholdEl = document.getElementById("threshold");
+const verdictEl = document.getElementById("verdict");
+const feedbackEl = document.getElementById("feedback");
+
+let myHand = [];
+let dealt = false;
+
+function renderCards(cards) {
+  cardsEl.innerHTML = "";
+  if (!cards.length) {
+    for (let i = 0; i < 2; i++) {
+      const ph = document.createElement("div");
+      ph.className = "card placeholder";
+      cardsEl.appendChild(ph);
+    }
+    return;
+  }
+  for (const c of cards) {
+    const div = document.createElement("div");
+    div.className = "card " + SUIT_COLOR[SUITS[c.suit]];
+    const r = rankToStr(c.rank);
+    const s = SUIT_GLYPH[SUITS[c.suit]];
+    div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
+    cardsEl.appendChild(div);
+  }
+}
+
+function variantHoleCount() { return VARIANTS[variantSel.value].hole; }
+
+function reset() {
+  myHand = [];
+  dealt = false;
+  renderCards([]);
+  resultEl.classList.add("hidden");
+  callActions.style.display = "none";
+  statusEl.textContent = "";
+  dealBtn.disabled = false;
+  dealBtn.textContent = "Deal";
+}
+
+function deal() {
+  const deck = shuffle(makeDeck());
+  myHand = deck.slice(0, variantHoleCount());
+  dealt = true;
+  renderCards(myHand);
+  resultEl.classList.add("hidden");
+  callActions.style.display = "flex";
+  statusEl.textContent = "Play or fold?";
+  dealBtn.disabled = true;
+}
+
+async function handleCall(userChoice) {
+  const numPlayers = parseInt(playersSel.value, 10);
+  const numOpponents = numPlayers - 1;
+  const variant = variantSel.value;
+
+  callActions.style.display = "none";
+  statusEl.textContent = "Simulating 10,000 hands…";
+  // Yield so the status renders before the heavy loop
+  await new Promise(r => setTimeout(r, 20));
+
+  const t0 = performance.now();
+  const winRate = simulate(myHand, numOpponents, variant, 10000);
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+
+  const threshold = 1 / numPlayers;
+  const shouldPlay = winRate > threshold;
+  const verdict = shouldPlay ? "PLAY" : "FOLD";
+  const userPlay = userChoice === "play";
+  const correct = userPlay === shouldPlay;
+
+  winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
+  thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
+  verdictEl.textContent = verdict;
+  verdictEl.className = "result-val verdict " + (shouldPlay ? "play" : "fold");
+  feedbackEl.textContent = correct
+    ? `Correct — you chose ${userChoice.toUpperCase()}.`
+    : `Off this time — the math says ${verdict}.`;
+  feedbackEl.className = "feedback " + (correct ? "right" : "wrong");
+  resultEl.classList.remove("hidden");
+  statusEl.textContent = `Done in ${elapsed}s. Click Deal for another hand.`;
+
+  dealBtn.disabled = false;
+  dealBtn.textContent = "Deal again";
+}
+
+dealBtn.addEventListener("click", deal);
+playBtn.addEventListener("click", () => handleCall("play"));
+foldBtn.addEventListener("click", () => handleCall("fold"));
+variantSel.addEventListener("change", reset);
+playersSel.addEventListener("change", () => { if (dealt) statusEl.textContent = "Player count changed — current hand still valid."; });
+
+reset();
+</script>
+</body>
+</html>
