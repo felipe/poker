@@ -101,7 +101,7 @@
   .card.black { color: var(--card-black); }
   .card .top { font-size: 1.5rem; line-height: 1; }
   .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
-  .card .bot { font-size: 1.5rem; text-align: right; line-height: 1; transform: rotate(180deg); }
+  .card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); }
   .card.placeholder {
     background: transparent;
     border: 2px dashed #2a3f33;
@@ -136,6 +136,37 @@
   .feedback.right { color: var(--good); }
   .feedback.wrong { color: var(--bad); }
   .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
+
+  .breakdown { margin-top: 14px; }
+  .breakdown:empty { display: none; }
+  .breakdown-title {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 52px;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 0.9rem;
+  }
+  .bar-name { color: var(--ink); }
+  .bar-track {
+    height: 8px;
+    background: #1f3327;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+  }
+  .bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -188,6 +219,7 @@ The app runs 10,000 simulated hands and tells you if you were right.</p>
       <span class="result-val verdict" id="verdict">—</span>
     </div>
     <div id="feedback" class="feedback"></div>
+    <div id="breakdown" class="breakdown"></div>
   </div>
 </div>
 
@@ -338,10 +370,11 @@ const VARIANTS = {
 };
 
 // ---------- monte carlo ----------
+const CATEGORY_DIVISOR = 100 ** 5; // matches pack() encoding
+
 function simulate(myCards, numOpponents, variant, iterations) {
   const v = VARIANTS[variant];
   const fullDeck = makeDeck();
-  // Remove my cards from the deck
   const myKey = new Set(myCards.map(c => c.rank * 4 + c.suit));
   const remaining = fullDeck.filter(c => !myKey.has(c.rank * 4 + c.suit));
 
@@ -350,9 +383,9 @@ function simulate(myCards, numOpponents, variant, iterations) {
   const cardsNeeded = numOpponents * oppCards + boardCards;
 
   let wins = 0;
+  const distribution = new Array(9).fill(0); // count of user's final hand category
 
   for (let iter = 0; iter < iterations; iter++) {
-    // Partial Fisher-Yates: only shuffle the first `cardsNeeded` slots
     for (let i = 0; i < cardsNeeded; i++) {
       const j = i + ((Math.random() * (remaining.length - i)) | 0);
       const t = remaining[i]; remaining[i] = remaining[j]; remaining[j] = t;
@@ -361,6 +394,7 @@ function simulate(myCards, numOpponents, variant, iterations) {
     const board = remaining.slice(numOpponents * oppCards, numOpponents * oppCards + boardCards);
     const myHand = myCards.concat(board);
     const myScore = evaluate(myHand);
+    distribution[Math.floor(myScore / CATEGORY_DIVISOR)]++;
 
     let winners = 1;
     let beaten = false;
@@ -372,8 +406,16 @@ function simulate(myCards, numOpponents, variant, iterations) {
     }
     if (!beaten) wins += 1 / winners;
   }
-  return wins / iterations;
+  return {
+    winRate: wins / iterations,
+    distribution: distribution.map(c => c / iterations),
+  };
 }
+
+const CATEGORY_NAMES = [
+  "High card", "One pair", "Two pair", "Three of a kind", "Straight",
+  "Flush", "Full house", "Four of a kind", "Straight flush",
+];
 
 // ---------- UI ----------
 const cardsEl = document.getElementById("cards");
@@ -389,6 +431,7 @@ const winPctEl = document.getElementById("winPct");
 const thresholdEl = document.getElementById("threshold");
 const verdictEl = document.getElementById("verdict");
 const feedbackEl = document.getElementById("feedback");
+const breakdownEl = document.getElementById("breakdown");
 
 let myHand = [];
 let dealt = false;
@@ -422,6 +465,7 @@ function reset() {
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
   statusEl.textContent = "";
+  breakdownEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
 }
@@ -448,7 +492,7 @@ async function handleCall(userChoice) {
   await new Promise(r => setTimeout(r, 20));
 
   const t0 = performance.now();
-  const winRate = simulate(myHand, numOpponents, variant, 10000);
+  const { winRate, distribution } = simulate(myHand, numOpponents, variant, 10000);
   const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
 
   const threshold = 1 / numPlayers;
@@ -465,11 +509,32 @@ async function handleCall(userChoice) {
     ? `Correct — you chose ${userChoice.toUpperCase()}.`
     : `Off this time — the math says ${verdict}.`;
   feedbackEl.className = "feedback " + (correct ? "right" : "wrong");
+  renderBreakdown(distribution, variant);
   resultEl.classList.remove("hidden");
   statusEl.textContent = `Done in ${elapsed}s. Click Deal for another hand.`;
 
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
+}
+
+function renderBreakdown(distribution, variant) {
+  const locked = VARIANTS[variant].board === 0;
+  const title = locked ? "Your hand" : "Hands you'll likely make";
+  const rows = [];
+  for (let i = 8; i >= 0; i--) {
+    const p = distribution[i];
+    if (p < 0.005) continue;
+    const pct = (p * 100).toFixed(p >= 0.1 ? 0 : 1) + "%";
+    const w = Math.max(p * 100, 2);
+    rows.push(
+      `<div class="bar-row">
+        <span class="bar-name">${CATEGORY_NAMES[i]}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
+        <span class="bar-pct">${pct}</span>
+      </div>`
+    );
+  }
+  breakdownEl.innerHTML = `<div class="breakdown-title">${title}</div>${rows.join("")}`;
 }
 
 dealBtn.addEventListener("click", deal);
