@@ -91,6 +91,16 @@
     justify-content: center;
     gap: 16px;
   }
+  .board { margin-top: 4px; min-height: 0; }
+  .board::before {
+    content: "Board";
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .board.hidden { display: none; }
   .card {
     width: 88px;
     height: 124px;
@@ -213,6 +223,7 @@ The app runs 10,000 simulated hands and tells you if you were right.</p>
   </div>
 
   <div id="cards" class="cards"></div>
+  <div id="board" class="cards board hidden"></div>
 
   <button id="deal" class="btn-primary">Deal</button>
   <div class="actions" id="callActions" style="display:none">
@@ -381,26 +392,48 @@ function evaluate(cards) {
 
 // ---------- variants ----------
 const VARIANTS = {
-  holdem:    { name: "Texas Hold'em", hole: 2, board: 5 },
-  fivecard:  { name: "5-Card Draw",   hole: 5, board: 0 },
-  sevenstud: { name: "7-Card Stud",   hole: 7, board: 0 },
+  holdem: {
+    name: "Texas Hold'em", hole: 2, board: 5,
+    streets: [
+      { label: "Pre-flop", user: 2, board: 0 },
+      { label: "Flop",     user: 2, board: 3 },
+      { label: "Turn",     user: 2, board: 4 },
+      { label: "River",    user: 2, board: 5 },
+    ],
+  },
+  fivecard: {
+    name: "5-Card Draw", hole: 5, board: 0,
+    streets: [ { label: "Hand", user: 5, board: 0 } ],
+  },
+  sevenstud: {
+    name: "7-Card Stud", hole: 7, board: 0,
+    streets: [
+      { label: "3rd street", user: 3, board: 0 },
+      { label: "4th street", user: 4, board: 0 },
+      { label: "5th street", user: 5, board: 0 },
+      { label: "6th street", user: 6, board: 0 },
+      { label: "7th street", user: 7, board: 0 },
+    ],
+  },
 };
 
 // ---------- monte carlo ----------
 const CATEGORY_DIVISOR = 100 ** 5; // matches pack() encoding
 
-function simulate(myCards, numOpponents, variant, iterations) {
+function simulate(userRevealed, boardRevealed, numOpponents, variant, iterations) {
   const v = VARIANTS[variant];
-  const fullDeck = makeDeck();
-  const myKey = new Set(myCards.map(c => c.rank * 4 + c.suit));
-  const remaining = fullDeck.filter(c => !myKey.has(c.rank * 4 + c.suit));
+  const used = new Set();
+  for (const c of userRevealed) used.add(c.rank * 4 + c.suit);
+  for (const c of boardRevealed) used.add(c.rank * 4 + c.suit);
+  const remaining = makeDeck().filter(c => !used.has(c.rank * 4 + c.suit));
 
+  const userExtra = v.hole - userRevealed.length;
+  const boardExtra = v.board - boardRevealed.length;
   const oppCards = v.hole;
-  const boardCards = v.board;
-  const cardsNeeded = numOpponents * oppCards + boardCards;
+  const cardsNeeded = userExtra + boardExtra + numOpponents * oppCards;
 
   let wins = 0;
-  const distribution = new Array(9).fill(0); // count of user's final hand category
+  const distribution = new Array(9).fill(0);
 
   for (let iter = 0; iter < iterations; iter++) {
     for (let i = 0; i < cardsNeeded; i++) {
@@ -408,18 +441,21 @@ function simulate(myCards, numOpponents, variant, iterations) {
       const t = remaining[i]; remaining[i] = remaining[j]; remaining[j] = t;
     }
 
-    const board = remaining.slice(numOpponents * oppCards, numOpponents * oppCards + boardCards);
-    const myHand = myCards.concat(board);
-    const myScore = evaluate(myHand);
-    distribution[Math.floor(myScore / CATEGORY_DIVISOR)]++;
+    let ptr = 0;
+    const userMore = remaining.slice(ptr, ptr + userExtra); ptr += userExtra;
+    const boardMore = remaining.slice(ptr, ptr + boardExtra); ptr += boardExtra;
+    const fullBoard = boardRevealed.concat(boardMore);
+    const userHand = userRevealed.concat(userMore).concat(fullBoard);
+    const userScore = evaluate(userHand);
+    distribution[Math.floor(userScore / CATEGORY_DIVISOR)]++;
 
     let winners = 1;
     let beaten = false;
     for (let o = 0; o < numOpponents; o++) {
-      const opp = remaining.slice(o * oppCards, (o + 1) * oppCards);
-      const oppScore = evaluate(opp.concat(board));
-      if (oppScore > myScore) { beaten = true; break; }
-      if (oppScore === myScore) winners++;
+      const opp = remaining.slice(ptr + o * oppCards, ptr + (o + 1) * oppCards);
+      const oppScore = evaluate(opp.concat(fullBoard));
+      if (oppScore > userScore) { beaten = true; break; }
+      if (oppScore === userScore) winners++;
     }
     if (!beaten) wins += 1 / winners;
   }
@@ -436,6 +472,7 @@ const CATEGORY_NAMES = [
 
 // ---------- UI ----------
 const cardsEl = document.getElementById("cards");
+const boardEl = document.getElementById("board");
 const dealBtn = document.getElementById("deal");
 const playBtn = document.getElementById("play");
 const foldBtn = document.getElementById("fold");
@@ -450,20 +487,31 @@ const verdictEl = document.getElementById("verdict");
 const feedbackEl = document.getElementById("feedback");
 const breakdownEl = document.getElementById("breakdown");
 
-let myHand = [];
-let dealt = false;
+// Hand-in-progress state
+let deck = [];
+let cursor = 0;
+let streetIdx = 0;
+let userRevealed = [];
+let boardRevealed = [];
 let lastUserChoice = null;
 let resultsVisible = false;
+let handDone = false;
 
 // Row layout per total card count, so the cards keep their shape
 // instead of squashing onto a single line.
-const ROW_LAYOUTS = { 2: [2], 5: [3, 2], 7: [4, 3] };
+const ROW_LAYOUTS = { 2: [2], 3: [3], 4: [4], 5: [3, 2], 6: [3, 3], 7: [4, 3] };
 function rowLayout(n) { return ROW_LAYOUTS[n] || [n]; }
 
-function renderCards(cards) {
-  cardsEl.innerHTML = "";
+function currentVariant() { return VARIANTS[variantSel.value]; }
+function currentStreet() { return currentVariant().streets[streetIdx]; }
+function isFinalStreet() { return streetIdx === currentVariant().streets.length - 1; }
+
+function renderCardsInto(target, cards, placeholderCount) {
+  target.innerHTML = "";
   const empty = cards.length === 0;
-  const layout = rowLayout(empty ? variantHoleCount() : cards.length);
+  const count = empty ? placeholderCount : cards.length;
+  if (count === 0) return;
+  const layout = rowLayout(count);
   let idx = 0;
   for (const rowSize of layout) {
     const row = document.createElement("div");
@@ -483,11 +531,18 @@ function renderCards(cards) {
         row.appendChild(div);
       }
     }
-    cardsEl.appendChild(row);
+    target.appendChild(row);
   }
 }
 
-function variantHoleCount() { return VARIANTS[variantSel.value].hole; }
+function renderHand() {
+  const v = currentVariant();
+  const firstUser = v.streets[0].user;
+  renderCardsInto(cardsEl, userRevealed, firstUser);
+  renderCardsInto(boardEl, boardRevealed, 0);
+  if (boardRevealed.length > 0) boardEl.classList.remove("hidden");
+  else boardEl.classList.add("hidden");
+}
 
 function maxPlayersForVariant(key) {
   const v = VARIANTS[key];
@@ -509,14 +564,20 @@ function applyPlayerCap() {
 }
 
 function reset() {
-  myHand = [];
-  dealt = false;
+  deck = [];
+  cursor = 0;
+  streetIdx = 0;
+  userRevealed = [];
+  boardRevealed = [];
   lastUserChoice = null;
   resultsVisible = false;
-  renderCards([]);
+  handDone = false;
+  renderHand();
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
   statusEl.textContent = "";
+  feedbackEl.textContent = "";
+  feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
@@ -525,81 +586,141 @@ function reset() {
   applyPlayerCap();
 }
 
-function deal() {
-  const deck = shuffle(makeDeck());
-  myHand = deck.slice(0, variantHoleCount());
-  dealt = true;
-  resultsVisible = false;
+function dealStreet(idx) {
+  const s = currentVariant().streets[idx];
+  const targetUser = s.user;
+  const targetBoard = s.board;
+  while (userRevealed.length < targetUser) {
+    userRevealed.push(deck[cursor++]);
+  }
+  while (boardRevealed.length < targetBoard) {
+    boardRevealed.push(deck[cursor++]);
+  }
+}
+
+function advanceStreet() {
+  streetIdx++;
+  dealStreet(streetIdx);
+}
+
+function revealRemaining() {
+  const last = currentVariant().streets.length - 1;
+  while (streetIdx < last) {
+    streetIdx++;
+    dealStreet(streetIdx);
+  }
+}
+
+async function deal() {
+  deck = shuffle(makeDeck());
+  cursor = 0;
+  streetIdx = 0;
+  userRevealed = [];
+  boardRevealed = [];
   lastUserChoice = null;
-  renderCards(myHand);
+  handDone = false;
+  dealStreet(0);
+  renderHand();
   resultEl.classList.add("hidden");
+  feedbackEl.textContent = "";
+  feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
-  callActions.style.display = "flex";
-  statusEl.textContent = "Play or fold?";
-  dealBtn.disabled = true;
-  variantSel.disabled = false;
+  // Auto-run the simulation for the starting state so the user sees the
+  // current equity before deciding to play or fold.
+  await runSimulationAndRender();
+  if (!handDone) callActions.style.display = "flex";
 }
 
 async function handleCall(userChoice) {
   lastUserChoice = userChoice;
   callActions.style.display = "none";
+
+  if (userChoice === "fold") {
+    const foldedAt = currentStreet().label;
+    // Sim at the fold state — equity reflects the decision the user just made,
+    // not what they'd have ended up with after the rest of the runout.
+    handDone = true;
+    await runSimulationAndRender();
+    // Then reveal the rest of the cards visually so they can see what they missed.
+    revealRemaining();
+    renderHand();
+    endHand(`You folded at the ${foldedAt}.`);
+    return;
+  }
+
+  // play
+  if (isFinalStreet()) {
+    handDone = true;
+    endHand("Showdown — hand complete.");
+    return;
+  }
+  advanceStreet();
+  renderHand();
   await runSimulationAndRender();
+  if (!handDone) callActions.style.display = "flex";
+}
+
+function endHand(summary) {
+  callActions.style.display = "none";
+  dealBtn.disabled = false;
+  dealBtn.textContent = "Deal again";
+  variantSel.disabled = false;
+  playersSel.disabled = false;
+  statusEl.textContent = summary + " Click Deal again for another hand.";
+  feedbackEl.textContent = summary;
+  feedbackEl.className = "feedback";
 }
 
 async function runSimulationAndRender() {
-  // Snapshot inputs before yielding so a Deal click or anything else
-  // during the await can't change the simulation's effective parameters.
-  // Copy the hand array so an in-place mutation elsewhere can't reach
-  // this run either.
+  // Snapshot inputs before yielding so anything during the await can't
+  // change the simulation's effective parameters.
   const numPlayers = parseInt(playersSel.value, 10);
   const numOpponents = numPlayers - 1;
   const variant = variantSel.value;
-  const handForRun = myHand.slice();
-  const choiceForRun = lastUserChoice;
+  const userForRun = userRevealed.slice();
+  const boardForRun = boardRevealed.slice();
+  const streetLabel = currentStreet().label;
 
-  // Lock all controls BEFORE the yield so no resets, deals, or variant
-  // changes can race against the in-flight simulation.
+  // Lock all controls BEFORE the yield so resets/deals/variant changes
+  // can't race against the in-flight simulation.
   variantSel.disabled = true;
   playersSel.disabled = true;
   dealBtn.disabled = true;
 
-  statusEl.textContent = "Simulating 10,000 hands…";
+  statusEl.textContent = `Simulating ${streetLabel}…`;
   await new Promise(r => setTimeout(r, 20));
 
-  const t0 = performance.now();
-  const { winRate, distribution } = simulate(handForRun, numOpponents, variant, 10000);
-  const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
-
+  const { winRate, distribution } = simulate(userForRun, boardForRun, numOpponents, variant, 10000);
   const threshold = 1 / numPlayers;
   const shouldPlay = winRate > threshold;
   const verdict = shouldPlay ? "PLAY" : "FOLD";
-  const userPlay = choiceForRun === "play";
-  const correct = userPlay === shouldPlay;
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
   thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
   verdictEl.textContent = verdict;
   verdictEl.className = "result-val verdict " + (shouldPlay ? "play" : "fold");
-  feedbackEl.textContent = correct
-    ? `Correct — you chose ${choiceForRun.toUpperCase()}.`
-    : `Off this time — the math says ${verdict}.`;
-  feedbackEl.className = "feedback " + (correct ? "right" : "wrong");
-  renderBreakdown(distribution, variant);
+  renderBreakdown(distribution, variant, userForRun, boardForRun);
   resultEl.classList.remove("hidden");
   resultsVisible = true;
-  statusEl.textContent = `Done in ${elapsed}s. Change players to re-run, or click Deal for another hand.`;
 
-  // Re-open every control. Player-count change re-runs the sim;
-  // variant change resets everything (handled by the existing change
-  // listener, which calls reset()).
+  if (!handDone) {
+    statusEl.textContent = `${streetLabel} — play or fold?`;
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+  }
+
+  // Re-open controls. Variant change clears everything via reset();
+  // player-count change re-runs the sim at the current street.
   playersSel.disabled = false;
   variantSel.disabled = false;
   dealBtn.disabled = false;
-  dealBtn.textContent = "Deal again";
 }
 
-function renderBreakdown(distribution, variant) {
-  const locked = VARIANTS[variant].board === 0;
+function renderBreakdown(distribution, variant, userAtSim, boardAtSim) {
+  const v = VARIANTS[variant];
+  // Locked = the user's final hand is fully known at sim time, so the
+  // distribution collapses to a single category (their actual hand).
+  const locked = userAtSim.length >= v.hole && boardAtSim.length >= v.board;
   const title = locked ? "Your hand" : "Hands you'll likely make";
   const ordered = distribution
     .map((p, i) => ({ p, i }))
