@@ -31,6 +31,7 @@
   }
   h1 { margin: 0 0 4px; font-size: 1.6rem; }
   .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
+  body.in-hand h1, body.in-hand .sub { display: none; }
   .panel {
     background: var(--panel);
     padding: 20px;
@@ -641,6 +642,7 @@ function reset() {
   dealBtn.textContent = "Deal";
   variantSel.disabled = false;
   playersSel.disabled = false;
+  document.body.classList.remove("in-hand");
   applyPlayerCap();
 }
 
@@ -691,6 +693,7 @@ function deal() {
   resultsVisible = false;
   dealStreet(0);
   snapshotStreet();
+  document.body.classList.add("in-hand");
   renderHand();
   resultEl.classList.add("hidden");
   feedbackEl.textContent = "";
