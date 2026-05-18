@@ -79,11 +79,17 @@
 
   .cards {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 140px;
+    margin: 20px 0;
+  }
+  .card-row {
+    display: flex;
     justify-content: center;
     gap: 16px;
-    min-height: 140px;
-    align-items: center;
-    margin: 20px 0;
   }
   .card {
     width: 88px;
@@ -136,6 +142,15 @@
   .feedback.right { color: var(--good); }
   .feedback.wrong { color: var(--bad); }
   .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
+
+  /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
+  @media (max-width: 440px) {
+    .card { width: 60px; height: 84px; padding: 5px; border-radius: 6px; }
+    .card .top, .card .bot { font-size: 1rem; }
+    .card .mid { font-size: 1.6rem; }
+    .card-row { gap: 8px; }
+    .cards { gap: 8px; min-height: 100px; }
+  }
 
   .breakdown { margin-top: 14px; }
   .breakdown:empty { display: none; }
@@ -440,23 +455,35 @@ let dealt = false;
 let lastUserChoice = null;
 let resultsVisible = false;
 
+// Row layout per total card count, so the cards keep their shape
+// instead of squashing onto a single line.
+const ROW_LAYOUTS = { 2: [2], 5: [3, 2], 7: [4, 3] };
+function rowLayout(n) { return ROW_LAYOUTS[n] || [n]; }
+
 function renderCards(cards) {
   cardsEl.innerHTML = "";
-  if (!cards.length) {
-    for (let i = 0; i < 2; i++) {
-      const ph = document.createElement("div");
-      ph.className = "card placeholder";
-      cardsEl.appendChild(ph);
+  const empty = cards.length === 0;
+  const layout = rowLayout(empty ? variantHoleCount() : cards.length);
+  let idx = 0;
+  for (const rowSize of layout) {
+    const row = document.createElement("div");
+    row.className = "card-row";
+    for (let i = 0; i < rowSize; i++) {
+      if (empty) {
+        const ph = document.createElement("div");
+        ph.className = "card placeholder";
+        row.appendChild(ph);
+      } else {
+        const c = cards[idx++];
+        const div = document.createElement("div");
+        div.className = "card " + SUIT_COLOR[SUITS[c.suit]];
+        const r = rankToStr(c.rank);
+        const s = SUIT_GLYPH[SUITS[c.suit]];
+        div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
+        row.appendChild(div);
+      }
     }
-    return;
-  }
-  for (const c of cards) {
-    const div = document.createElement("div");
-    div.className = "card " + SUIT_COLOR[SUITS[c.suit]];
-    const r = rankToStr(c.rank);
-    const s = SUIT_GLYPH[SUITS[c.suit]];
-    div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
-    cardsEl.appendChild(div);
+    cardsEl.appendChild(row);
   }
 }
 
@@ -522,10 +549,12 @@ async function handleCall(userChoice) {
 async function runSimulationAndRender() {
   // Snapshot inputs before yielding so a Deal click or anything else
   // during the await can't change the simulation's effective parameters.
+  // Copy the hand array so an in-place mutation elsewhere can't reach
+  // this run either.
   const numPlayers = parseInt(playersSel.value, 10);
   const numOpponents = numPlayers - 1;
   const variant = variantSel.value;
-  const handForRun = myHand;
+  const handForRun = myHand.slice();
   const choiceForRun = lastUserChoice;
 
   // Lock all controls BEFORE the yield so no resets, deals, or variant
@@ -560,9 +589,11 @@ async function runSimulationAndRender() {
   resultsVisible = true;
   statusEl.textContent = `Done in ${elapsed}s. Change players to re-run, or click Deal for another hand.`;
 
-  // Re-open the controls that should be live while results are showing.
-  // Variant stays locked until the user starts a new deal.
+  // Re-open every control. Player-count change re-runs the sim;
+  // variant change resets everything (handled by the existing change
+  // listener, which calls reset()).
   playersSel.disabled = false;
+  variantSel.disabled = false;
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
 }
