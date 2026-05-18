@@ -193,6 +193,27 @@
   }
   .bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 
+  .trajectory { margin-top: 14px; }
+  .trajectory:empty { display: none; }
+  .trajectory-title {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .trajectory svg { width: 100%; height: auto; display: block; }
+  .trajectory .grid { stroke: #1f3327; stroke-width: 1; }
+  .trajectory .grid-label { fill: var(--muted); font-size: 10px; text-anchor: end; font-variant-numeric: tabular-nums; }
+  .trajectory .threshold { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+  .trajectory .threshold-label { fill: var(--muted); font-size: 10px; text-anchor: end; }
+  .trajectory .line { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .trajectory .point { fill: var(--accent); }
+  .trajectory .point-label { fill: var(--ink); font-size: 11px; font-weight: 600; text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .trajectory .street-label { fill: var(--muted); font-size: 11px; text-anchor: middle; }
+
+  .verdict.tossup { color: var(--accent); }
+
   .settings {
     display: flex;
     flex-wrap: wrap;
@@ -274,6 +295,7 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
       <span class="result-val verdict" id="verdict">—</span>
     </div>
     <div id="feedback" class="feedback"></div>
+    <div id="trajectory" class="trajectory"></div>
     <div id="breakdown" class="breakdown"></div>
   </div>
 </div>
@@ -514,6 +536,11 @@ const thresholdEl = document.getElementById("threshold");
 const verdictEl = document.getElementById("verdict");
 const feedbackEl = document.getElementById("feedback");
 const breakdownEl = document.getElementById("breakdown");
+const trajectoryEl = document.getElementById("trajectory");
+
+// Equity within this band of the fair-share threshold counts as a TOSS-UP —
+// either decision is reasonable, so we don't second-guess the user.
+const TOSSUP_BAND = 0.01; // ±1 percentage point
 
 // Hand-in-progress state
 let deck = [];
@@ -523,6 +550,9 @@ let userRevealed = [];
 let boardRevealed = [];
 let resultsVisible = false;
 let handInProgress = false;
+// Snapshots of every street the user actually saw, captured right after the
+// cards are dealt. Used to compute the equity-by-street chart at hand's end.
+let streetHistory = [];
 
 // Row layout per total card count, so the cards keep their shape
 // instead of squashing onto a single line.
@@ -596,6 +626,7 @@ function reset() {
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
+  streetHistory = [];
   resultsVisible = false;
   handInProgress = false;
   renderHand();
@@ -605,6 +636,7 @@ function reset() {
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
+  trajectoryEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
   variantSel.disabled = false;
@@ -624,9 +656,20 @@ function dealStreet(idx) {
   }
 }
 
+// Capture the cards visible at the current street so we can show how the
+// user's equity evolved over the streets they actually played.
+function snapshotStreet() {
+  streetHistory.push({
+    label: currentStreet().label,
+    user: userRevealed.slice(),
+    board: boardRevealed.slice(),
+  });
+}
+
 function advanceStreet() {
   streetIdx++;
   dealStreet(streetIdx);
+  snapshotStreet();
 }
 
 function revealRemaining() {
@@ -643,14 +686,17 @@ function deal() {
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
+  streetHistory = [];
   handInProgress = true;
   resultsVisible = false;
   dealStreet(0);
+  snapshotStreet();
   renderHand();
   resultEl.classList.add("hidden");
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
+  trajectoryEl.innerHTML = "";
   dealBtn.disabled = true;
   dealBtn.textContent = "Deal";
   promptDecision();
@@ -707,9 +753,8 @@ async function runSimulationAndRender() {
   const numPlayers = parseInt(playersSel.value, 10);
   const numOpponents = numPlayers - 1;
   const variant = variantSel.value;
-  const userForRun = userRevealed.slice();
-  const boardForRun = boardRevealed.slice();
-  const streetLabel = currentStreet().label;
+  const history = streetHistory.slice();
+  const threshold = 1 / numPlayers;
 
   // Lock all controls BEFORE the yield so resets/deals/variant changes
   // can't race against the in-flight simulation.
@@ -717,19 +762,36 @@ async function runSimulationAndRender() {
   playersSel.disabled = true;
   dealBtn.disabled = true;
 
-  statusEl.textContent = `Simulating ${streetLabel}…`;
+  statusEl.textContent = "Simulating…";
   await new Promise(r => setTimeout(r, 20));
 
-  const { winRate, distribution } = simulate(userForRun, boardForRun, numOpponents, variant, 10000);
-  const threshold = 1 / numPlayers;
-  const shouldPlay = winRate > threshold;
-  const verdict = shouldPlay ? "PLAY" : "FOLD";
+  // One sim per street the user saw — the last is the terminal state used
+  // for the headline verdict and breakdown, the rest power the equity chart.
+  const trajectory = history.map(snap => {
+    const res = simulate(snap.user, snap.board, numOpponents, variant, 10000);
+    return { label: snap.label, user: snap.user, board: snap.board, ...res };
+  });
+  const final = trajectory[trajectory.length - 1];
+  const winRate = final.winRate;
+
+  let verdictText, verdictClass;
+  if (Math.abs(winRate - threshold) <= TOSSUP_BAND) {
+    verdictText = "TOSS-UP";
+    verdictClass = "tossup";
+  } else if (winRate > threshold) {
+    verdictText = "PLAY";
+    verdictClass = "play";
+  } else {
+    verdictText = "FOLD";
+    verdictClass = "fold";
+  }
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
   thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
-  verdictEl.textContent = verdict;
-  verdictEl.className = "result-val verdict " + (shouldPlay ? "play" : "fold");
-  renderBreakdown(distribution, variant, userForRun, boardForRun);
+  verdictEl.textContent = verdictText;
+  verdictEl.className = "result-val verdict " + verdictClass;
+  renderBreakdown(final.distribution, variant, final.user, final.board);
+  renderTrajectory(trajectory, threshold);
   resultEl.classList.remove("hidden");
   resultsVisible = true;
 
@@ -745,6 +807,46 @@ async function runSimulationAndRender() {
   playersSel.disabled = false;
   variantSel.disabled = false;
   dealBtn.disabled = handInProgress;
+}
+
+function renderTrajectory(trajectory, threshold) {
+  // A single point isn't a trajectory — no chart to draw.
+  if (trajectory.length < 2) {
+    trajectoryEl.innerHTML = "";
+    return;
+  }
+
+  const W = 400, H = 180;
+  const padL = 40, padR = 16, padT = 22, padB = 32;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const y = v => padT + innerH * (1 - v);
+  const x = i => padL + i * innerW / (trajectory.length - 1);
+
+  const parts = [`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`];
+
+  for (let v = 0; v <= 1.0001; v += 0.25) {
+    const yv = y(v);
+    parts.push(`<line class="grid" x1="${padL}" x2="${W - padR}" y1="${yv}" y2="${yv}"/>`);
+    parts.push(`<text class="grid-label" x="${padL - 6}" y="${yv + 4}">${Math.round(v * 100)}%</text>`);
+  }
+
+  const tY = y(threshold);
+  parts.push(`<line class="threshold" x1="${padL}" x2="${W - padR}" y1="${tY}" y2="${tY}"/>`);
+  parts.push(`<text class="threshold-label" x="${W - padR}" y="${tY - 4}">fair share</text>`);
+
+  const pathD = trajectory.map((t, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(t.winRate)}`).join(" ");
+  parts.push(`<path class="line" d="${pathD}"/>`);
+
+  trajectory.forEach((t, i) => {
+    const px = x(i), py = y(t.winRate);
+    parts.push(`<circle class="point" cx="${px}" cy="${py}" r="4"/>`);
+    parts.push(`<text class="point-label" x="${px}" y="${py - 8}">${(t.winRate * 100).toFixed(0)}%</text>`);
+    parts.push(`<text class="street-label" x="${px}" y="${H - 10}">${t.label}</text>`);
+  });
+
+  parts.push(`</svg>`);
+  trajectoryEl.innerHTML = `<div class="trajectory-title">Equity by street</div>${parts.join("")}`;
 }
 
 function renderBreakdown(distribution, variant, userAtSim, boardAtSim) {
