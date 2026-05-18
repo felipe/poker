@@ -192,13 +192,35 @@
     border-radius: 4px;
   }
   .bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    margin-bottom: 16px;
+  }
+  .settings label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .settings input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <h1>Poker Hand Advisor</h1>
 <p class="sub">Pick a variant and player count, deal your hand, then call play or fold.<br>
-The app runs 10,000 simulated hands and tells you if you were right.</p>
+After you decide, the app runs 10,000 simulated hands and tells you if you were right.</p>
 
 <div class="panel">
   <div class="controls">
@@ -218,6 +240,13 @@ The app runs 10,000 simulated hands and tells you if you were right.</p>
         <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
       </select>
     </div>
+  </div>
+
+  <div class="settings">
+    <label>
+      <input type="checkbox" id="revealOnFold">
+      Reveal remaining cards on fold
+    </label>
   </div>
 
   <div id="cards" class="cards"></div>
@@ -477,6 +506,7 @@ const foldBtn = document.getElementById("fold");
 const callActions = document.getElementById("callActions");
 const variantSel = document.getElementById("variant");
 const playersSel = document.getElementById("players");
+const revealOnFoldEl = document.getElementById("revealOnFold");
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
 const winPctEl = document.getElementById("winPct");
@@ -609,7 +639,7 @@ function revealRemaining() {
   }
 }
 
-async function deal() {
+function deal() {
   deck = shuffle(makeDeck());
   cursor = 0;
   streetIdx = 0;
@@ -617,16 +647,21 @@ async function deal() {
   boardRevealed = [];
   handDone = false;
   handInProgress = true;
+  resultsVisible = false;
   dealStreet(0);
   renderHand();
   resultEl.classList.add("hidden");
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
-  // Auto-run the simulation for the starting state so the user sees the
-  // current equity before deciding to play or fold.
-  await runSimulationAndRender();
-  if (!handDone) callActions.style.display = "flex";
+  dealBtn.disabled = true;
+  dealBtn.textContent = "Deal";
+  promptDecision();
+}
+
+function promptDecision() {
+  statusEl.textContent = `${currentStreet().label} — play or fold?`;
+  callActions.style.display = "flex";
 }
 
 async function handleCall(userChoice) {
@@ -639,9 +674,10 @@ async function handleCall(userChoice) {
     // not what they'd have ended up with after the rest of the runout.
     handDone = true;
     await runSimulationAndRender();
-    // Then reveal the rest of the cards visually so they can see what they missed.
-    revealRemaining();
-    renderHand();
+    if (revealOnFoldEl.checked) {
+      revealRemaining();
+      renderHand();
+    }
     endHand(summary);
     return;
   }
@@ -649,13 +685,13 @@ async function handleCall(userChoice) {
   // play
   if (isFinalStreet()) {
     handDone = true;
+    await runSimulationAndRender();
     endHand("Showdown — hand complete.");
     return;
   }
   advanceStreet();
   renderHand();
-  await runSimulationAndRender();
-  if (!handDone) callActions.style.display = "flex";
+  promptDecision();
 }
 
 function endHand(summary) {
@@ -702,21 +738,15 @@ async function runSimulationAndRender() {
   resultEl.classList.remove("hidden");
   resultsVisible = true;
 
-  // Always update the status so the "Simulating…" message doesn't linger
-  // after the result has rendered. Mid-hand: prompt for the next decision.
-  // Folding/showdown: clear it; endHand() will write the final message.
-  if (handDone) {
-    statusEl.textContent = "";
-  } else {
-    statusEl.textContent = `${streetLabel} — play or fold?`;
-    feedbackEl.textContent = "";
-    feedbackEl.className = "feedback";
-  }
+  // Clear "Simulating…". If the hand is already wrapped up (player-count
+  // change after a fold/showdown), restore the deal-again prompt; otherwise
+  // endHand() will write the final message right after this returns.
+  statusEl.textContent = handInProgress ? "" : "Click Deal again for another hand.";
 
   // Re-open controls. Variant change clears everything via reset();
-  // player-count change re-runs the sim at the current street. Deal stays
-  // disabled while a hand is in progress so a stray click can't silently
-  // abandon the hand mid-street; endHand() re-enables it.
+  // player-count change re-runs the sim against the resolved hand state.
+  // Deal stays disabled while a hand is in progress so a stray click can't
+  // silently abandon the hand mid-street; endHand() re-enables it.
   playersSel.disabled = false;
   variantSel.disabled = false;
   dealBtn.disabled = handInProgress;
