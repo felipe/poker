@@ -522,7 +522,6 @@ let streetIdx = 0;
 let userRevealed = [];
 let boardRevealed = [];
 let resultsVisible = false;
-let handDone = false;
 let handInProgress = false;
 
 // Row layout per total card count, so the cards keep their shape
@@ -598,7 +597,6 @@ function reset() {
   userRevealed = [];
   boardRevealed = [];
   resultsVisible = false;
-  handDone = false;
   handInProgress = false;
   renderHand();
   resultEl.classList.add("hidden");
@@ -645,7 +643,6 @@ function deal() {
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
-  handDone = false;
   handInProgress = true;
   resultsVisible = false;
   dealStreet(0);
@@ -672,7 +669,6 @@ async function handleCall(userChoice) {
     const summary = foldText ? `You folded ${foldText}.` : "You folded.";
     // Sim at the fold state — equity reflects the decision the user just made,
     // not what they'd have ended up with after the rest of the runout.
-    handDone = true;
     await runSimulationAndRender();
     if (revealOnFoldEl.checked) {
       revealRemaining();
@@ -684,7 +680,6 @@ async function handleCall(userChoice) {
 
   // play
   if (isFinalStreet()) {
-    handDone = true;
     await runSimulationAndRender();
     endHand("Showdown — hand complete.");
     return;
