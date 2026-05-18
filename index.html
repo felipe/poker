@@ -149,8 +149,6 @@
     text-align: center;
     font-weight: 600;
   }
-  .feedback.right { color: var(--good); }
-  .feedback.wrong { color: var(--bad); }
   .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
 
   /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
@@ -395,24 +393,24 @@ const VARIANTS = {
   holdem: {
     name: "Texas Hold'em", hole: 2, board: 5,
     streets: [
-      { label: "Pre-flop", user: 2, board: 0 },
-      { label: "Flop",     user: 2, board: 3 },
-      { label: "Turn",     user: 2, board: 4 },
-      { label: "River",    user: 2, board: 5 },
+      { label: "Pre-flop", foldText: "pre-flop",    user: 2, board: 0 },
+      { label: "Flop",     foldText: "on the flop", user: 2, board: 3 },
+      { label: "Turn",     foldText: "on the turn", user: 2, board: 4 },
+      { label: "River",    foldText: "on the river",user: 2, board: 5 },
     ],
   },
   fivecard: {
     name: "5-Card Draw", hole: 5, board: 0,
-    streets: [ { label: "Hand", user: 5, board: 0 } ],
+    streets: [ { label: "Hand", foldText: "", user: 5, board: 0 } ],
   },
   sevenstud: {
     name: "7-Card Stud", hole: 7, board: 0,
     streets: [
-      { label: "3rd street", user: 3, board: 0 },
-      { label: "4th street", user: 4, board: 0 },
-      { label: "5th street", user: 5, board: 0 },
-      { label: "6th street", user: 6, board: 0 },
-      { label: "7th street", user: 7, board: 0 },
+      { label: "3rd street", foldText: "on 3rd street", user: 3, board: 0 },
+      { label: "4th street", foldText: "on 4th street", user: 4, board: 0 },
+      { label: "5th street", foldText: "on 5th street", user: 5, board: 0 },
+      { label: "6th street", foldText: "on 6th street", user: 6, board: 0 },
+      { label: "7th street", foldText: "on 7th street", user: 7, board: 0 },
     ],
   },
 };
@@ -493,9 +491,9 @@ let cursor = 0;
 let streetIdx = 0;
 let userRevealed = [];
 let boardRevealed = [];
-let lastUserChoice = null;
 let resultsVisible = false;
 let handDone = false;
+let handInProgress = false;
 
 // Row layout per total card count, so the cards keep their shape
 // instead of squashing onto a single line.
@@ -569,9 +567,9 @@ function reset() {
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
-  lastUserChoice = null;
   resultsVisible = false;
   handDone = false;
+  handInProgress = false;
   renderHand();
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
@@ -617,8 +615,8 @@ async function deal() {
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
-  lastUserChoice = null;
   handDone = false;
+  handInProgress = true;
   dealStreet(0);
   renderHand();
   resultEl.classList.add("hidden");
@@ -632,11 +630,11 @@ async function deal() {
 }
 
 async function handleCall(userChoice) {
-  lastUserChoice = userChoice;
   callActions.style.display = "none";
 
   if (userChoice === "fold") {
-    const foldedAt = currentStreet().label;
+    const foldText = currentStreet().foldText;
+    const summary = foldText ? `You folded ${foldText}.` : "You folded.";
     // Sim at the fold state — equity reflects the decision the user just made,
     // not what they'd have ended up with after the rest of the runout.
     handDone = true;
@@ -644,7 +642,7 @@ async function handleCall(userChoice) {
     // Then reveal the rest of the cards visually so they can see what they missed.
     revealRemaining();
     renderHand();
-    endHand(`You folded at the ${foldedAt}.`);
+    endHand(summary);
     return;
   }
 
@@ -661,12 +659,13 @@ async function handleCall(userChoice) {
 }
 
 function endHand(summary) {
+  handInProgress = false;
   callActions.style.display = "none";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
   variantSel.disabled = false;
   playersSel.disabled = false;
-  statusEl.textContent = summary + " Click Deal again for another hand.";
+  statusEl.textContent = "Click Deal again for another hand.";
   feedbackEl.textContent = summary;
   feedbackEl.className = "feedback";
 }
@@ -703,17 +702,24 @@ async function runSimulationAndRender() {
   resultEl.classList.remove("hidden");
   resultsVisible = true;
 
-  if (!handDone) {
+  // Always update the status so the "Simulating…" message doesn't linger
+  // after the result has rendered. Mid-hand: prompt for the next decision.
+  // Folding/showdown: clear it; endHand() will write the final message.
+  if (handDone) {
+    statusEl.textContent = "";
+  } else {
     statusEl.textContent = `${streetLabel} — play or fold?`;
     feedbackEl.textContent = "";
     feedbackEl.className = "feedback";
   }
 
   // Re-open controls. Variant change clears everything via reset();
-  // player-count change re-runs the sim at the current street.
+  // player-count change re-runs the sim at the current street. Deal stays
+  // disabled while a hand is in progress so a stray click can't silently
+  // abandon the hand mid-street; endHand() re-enables it.
   playersSel.disabled = false;
   variantSel.disabled = false;
-  dealBtn.disabled = false;
+  dealBtn.disabled = handInProgress;
 }
 
 function renderBreakdown(distribution, variant, userAtSim, boardAtSim) {
