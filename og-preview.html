@@ -1,0 +1,207 @@
+<!doctype html>
+<!--
+  Reproducible source for og.png. Composes the canonical JJ-on-trip-9s-
+  river-ace scenario into a 1200×630 frame using the brutalist theme.
+  This is not the live app's exact layout — it's a static share card that
+  uses the same CSS vocabulary so the social preview stays on-brand.
+
+  To regenerate og.png:
+    1. Serve the project (e.g. `python3 -m http.server 8765`).
+    2. Make sure you have a network connection — the brutalist theme pulls
+       JetBrains Mono from Google Fonts via @import. The page won't add the
+       `ready` attribute on <html> until `document.fonts.ready` resolves,
+       so a headless screenshot will capture stale typography if it fires
+       before the fonts load.
+    3. Run headless Chrome (waits for the readiness signal):
+         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+           --headless --disable-gpu --hide-scrollbars \
+           --window-size=1200,630 \
+           --virtual-time-budget=4000 \
+           --screenshot=og.png \
+           http://localhost:8765/og-preview.html
+       The --virtual-time-budget gives the fonts time to load before the
+       PNG is captured.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200, initial-scale=1">
+<title>Poker Hand Advisor — share preview</title>
+<link rel="stylesheet" href="css/themes.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="themes/brutalist.css">
+<style>
+  /* Fixed 1200×630 canvas — OG / iMessage standard. */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 1200px;
+    height: 630px;
+    min-height: 630px !important;
+    max-height: 630px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  body {
+    display: grid;
+    grid-template-columns: 540px 1fr;
+    gap: 40px;
+    padding: 44px 56px;
+    box-sizing: border-box;
+    align-items: stretch;
+    align-content: stretch;
+  }
+  /* Hide app chrome we don't want in a static preview. */
+  #deal, #callActions, #status, #prompt, .settings-section { display: none !important; }
+
+  /* Left column — identity. Simple stack: positional, not flex-distributed,
+     so headless and live renders look the same. */
+  .lockup {
+    display: flex;
+    flex-direction: column;
+    color: var(--ink);
+  }
+  .doc-line {
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .title {
+    font-family: var(--mono);
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    margin: 0 0 18px;
+  }
+  .title::before { content: "// "; color: var(--accent); }
+  .title::after  { content: " //"; color: var(--accent); }
+  .tagline {
+    font-family: var(--mono);
+    font-size: 1.15rem;
+    line-height: 1.45;
+    margin: 0 0 22px;
+    color: var(--ink);
+  }
+  .suits-emblem {
+    margin-top: 36px;
+    font-size: 2rem;
+    letter-spacing: 0.12em;
+  }
+  .suits-emblem .r { color: var(--card-red); }
+  .suits-emblem .b { color: var(--ink); }
+  .meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* Right column — a result-panel sample. */
+  .demo {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 18px 18px 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .demo::before {
+    content: "› OUTPUT";
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--paper);
+    padding: 0 8px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+  }
+  .demo .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hairline);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .demo .row .lbl { color: var(--muted); }
+  .demo .row .val { color: var(--ink); font-size: 1.5rem; letter-spacing: 0.04em; }
+  .demo .verdict-row .val { color: var(--good); font-size: 1.2rem; font-weight: 800; }
+  .demo .verdict-row .val::before { content: "> "; color: var(--accent); }
+  .demo .hand-line {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 4px 0 0;
+  }
+  .demo .hand-line .lbl { color: var(--accent); font-weight: 800; }
+  .demo .hand-line .r { color: var(--card-red); }
+  .demo .recap {
+    margin: 4px 0 0;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    letter-spacing: 0.03em;
+    color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="lockup">
+  <div>
+    <div class="doc-line">DOC-001 / MONTE-CARLO / N=10,000</div>
+    <h1 class="title">POKER HAND ADVISOR</h1>
+    <p class="tagline">Play or fold — and learn why.</p>
+  </div>
+  <div class="suits-emblem">
+    <span class="b">♠</span> <span class="r">♥</span> <span class="r">♦</span> <span class="b">♣</span>
+  </div>
+</div>
+
+<div class="demo">
+  <div class="row">
+    <span class="lbl">Your win %</span>
+    <span class="val">31.0%</span>
+  </div>
+  <div class="row">
+    <span class="lbl">Fair share (1 of 5)</span>
+    <span class="val">20.0%</span>
+  </div>
+  <div class="row verdict-row">
+    <span class="lbl">Verdict</span>
+    <span class="val">PLAY</span>
+  </div>
+  <p class="hand-line">
+    <span class="lbl">HAND</span> J<span class="r">♥</span> J<span class="r">♦</span> &nbsp;·&nbsp;
+    <span class="lbl">BOARD</span> 9♣ 9♠ 10♠ 9<span class="r">♦</span> A<span class="r">♥</span>
+  </p>
+  <p class="recap">
+    You ended with <strong>nines full of jacks</strong>, but your equity fell from 38% to 31%. The biggest drop was on the river: the ace on the board means anyone holding an ace makes a full house bigger than your nines-full-of-jacks.
+  </p>
+</div>
+
+<script>
+  // Mark the document ready only after webfonts have loaded so a headless
+  // screenshot (or any scraper that respects this signal) doesn't capture
+  // stale typography. JetBrains Mono is pulled from Google Fonts by the
+  // brutalist theme; without this gate the PNG can render in the fallback
+  // monospace stack before the network round-trip finishes.
+  document.fonts.ready.then(() => {
+    document.documentElement.setAttribute("data-ready", "true");
+  });
+</script>
+</body>
+</html>
