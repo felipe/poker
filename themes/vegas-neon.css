@@ -1,0 +1,578 @@
+  @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Bebas+Neue&display=swap');
+
+  :root {
+    --bg-0: #07030f;
+    --bg-1: #120726;
+    --bg-2: #1a0a3a;
+    --panel: rgba(20, 8, 48, 0.78);
+    --panel-edge: rgba(255, 64, 200, 0.35);
+    --ink: #f6e9ff;
+    --muted: #a497c9;
+    --neon-magenta: #ff2bd6;
+    --neon-cyan: #00f0ff;
+    --neon-gold: #ffd84d;
+    --neon-violet: #c46bff;
+    --neon-red: #ff3b6b;
+    --neon-green: #39ffa6;
+    --card-bg: #fff8e6;
+    --card-black: #100018;
+    --card-red: #d61a4a;
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 28px 16px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background:
+      radial-gradient(ellipse at 18% 8%, rgba(255, 43, 214, 0.22), transparent 55%),
+      radial-gradient(ellipse at 82% 92%, rgba(0, 240, 255, 0.18), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(196, 107, 255, 0.10), transparent 65%),
+      linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+    position: relative;
+  }
+  /* Scanline overlay — very faint, doesn't fight content */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.02) 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index: 1;
+    mix-blend-mode: overlay;
+  }
+  /* Marquee bulb border at the very top */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background:
+      radial-gradient(circle at 8px 3px, var(--neon-gold) 0 2px, transparent 3px),
+      radial-gradient(circle at 24px 3px, var(--neon-magenta) 0 2px, transparent 3px),
+      radial-gradient(circle at 40px 3px, var(--neon-cyan) 0 2px, transparent 3px);
+    background-size: 48px 6px;
+    background-repeat: repeat-x;
+    filter: drop-shadow(0 0 4px rgba(255, 43, 214, 0.7));
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  h1 {
+    margin: 8px 0 6px;
+    font-family: "Monoton", "Bebas Neue", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 3rem;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-align: center;
+    color: #fff;
+    text-shadow:
+      0 0 4px #fff,
+      0 0 10px var(--neon-magenta),
+      0 0 22px var(--neon-magenta),
+      0 0 42px rgba(255, 43, 214, 0.65),
+      0 0 78px rgba(196, 107, 255, 0.45);
+    position: relative;
+    z-index: 3;
+    animation: neon-flicker 5.5s infinite;
+  }
+  @keyframes neon-flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+      text-shadow:
+        0 0 4px #fff,
+        0 0 10px var(--neon-magenta),
+        0 0 22px var(--neon-magenta),
+        0 0 42px rgba(255, 43, 214, 0.65),
+        0 0 78px rgba(196, 107, 255, 0.45);
+      opacity: 1;
+    }
+    20%, 24%, 55% {
+      text-shadow: none;
+      opacity: 0.78;
+    }
+  }
+  .sub {
+    color: var(--muted);
+    margin: 4px 0 26px;
+    font-size: 0.92rem;
+    text-align: center;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+    position: relative;
+    z-index: 3;
+    max-width: 560px;
+  }
+
+  body.in-hand h1,
+  body.in-hand .sub,
+  body.in-hand #deal { display: none; }
+
+  .panel {
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 22px 22px 26px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 580px;
+    border: 1px solid var(--panel-edge);
+    box-shadow:
+      0 0 0 1px rgba(0, 240, 255, 0.18) inset,
+      0 0 22px rgba(255, 43, 214, 0.22),
+      0 0 60px rgba(196, 107, 255, 0.18),
+      0 20px 60px rgba(0, 0, 0, 0.65);
+    position: relative;
+    z-index: 3;
+  }
+  .panel::before {
+    /* outer neon halo, traced just outside the border */
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--neon-magenta), var(--neon-cyan) 50%, var(--neon-violet));
+    opacity: 0.22;
+    z-index: -1;
+    filter: blur(8px);
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .control { flex: 1; min-width: 140px; }
+  label {
+    display: block;
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.55);
+    margin-bottom: 6px;
+  }
+  select, button {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    background: rgba(7, 3, 15, 0.7);
+    color: var(--ink);
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.05s, opacity 0.15s;
+  }
+  select { box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.08) inset; }
+  select:focus, button:focus { outline: none; }
+  select:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 1px var(--neon-cyan), 0 0 12px rgba(0, 240, 255, 0.5);
+  }
+  button {
+    border: 1px solid transparent;
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 1.15rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; filter: saturate(0.4); }
+
+  .btn-primary {
+    background: linear-gradient(180deg, #ffeb8a 0%, var(--neon-gold) 60%, #c79100 100%);
+    color: #1a0a00;
+    border-color: rgba(255, 216, 77, 0.8);
+    box-shadow:
+      0 0 14px rgba(255, 216, 77, 0.55),
+      0 0 32px rgba(255, 216, 77, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .btn-primary:hover:not(:disabled) {
+    box-shadow:
+      0 0 18px rgba(255, 216, 77, 0.85),
+      0 0 48px rgba(255, 216, 77, 0.55),
+      0 0 0 1px rgba(255, 255, 255, 0.35) inset;
+  }
+  .btn-play {
+    background: rgba(7, 30, 22, 0.65);
+    color: var(--neon-green);
+    border-color: var(--neon-green);
+    text-shadow: 0 0 8px rgba(57, 255, 166, 0.7);
+    box-shadow:
+      0 0 12px rgba(57, 255, 166, 0.4),
+      0 0 0 1px rgba(57, 255, 166, 0.3) inset;
+  }
+  .btn-play:hover:not(:disabled) {
+    background: rgba(20, 60, 42, 0.75);
+    box-shadow:
+      0 0 18px rgba(57, 255, 166, 0.7),
+      0 0 36px rgba(57, 255, 166, 0.4),
+      0 0 0 1px rgba(57, 255, 166, 0.5) inset;
+  }
+  .btn-fold {
+    background: rgba(38, 6, 18, 0.65);
+    color: var(--neon-red);
+    border-color: var(--neon-red);
+    text-shadow: 0 0 8px rgba(255, 59, 107, 0.7);
+    box-shadow:
+      0 0 12px rgba(255, 59, 107, 0.4),
+      0 0 0 1px rgba(255, 59, 107, 0.3) inset;
+  }
+  .btn-fold:hover:not(:disabled) {
+    background: rgba(80, 14, 36, 0.75);
+    box-shadow:
+      0 0 18px rgba(255, 59, 107, 0.7),
+      0 0 36px rgba(255, 59, 107, 0.4),
+      0 0 0 1px rgba(255, 59, 107, 0.55) inset;
+  }
+  .actions { display: flex; gap: 10px; margin-top: 12px; }
+  .actions button { flex: 1; }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 140px;
+    margin: 22px 0;
+    padding: 14px 10px;
+    border-radius: 12px;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(0, 240, 255, 0.12), transparent 70%),
+      linear-gradient(180deg, rgba(8, 4, 20, 0.65), rgba(20, 8, 48, 0.55));
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    box-shadow:
+      0 0 22px rgba(0, 240, 255, 0.12) inset,
+      0 0 24px rgba(0, 240, 255, 0.08);
+    position: relative;
+  }
+  .card-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  .board { margin-top: 4px; min-height: 0; }
+  .board::before {
+    content: "Board";
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    color: var(--neon-magenta);
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px rgba(255, 43, 214, 0.7);
+  }
+  .board.hidden { display: none; }
+
+  .card {
+    width: 88px;
+    height: 124px;
+    background:
+      linear-gradient(155deg, #fffaf0 0%, #fff8e6 60%, #f1e2c4 100%);
+    border-radius: 9px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px;
+    font-weight: 800;
+    font-family: "Georgia", "Times New Roman", serif;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.2) inset,
+      0 0 14px rgba(255, 248, 230, 0.4),
+      0 0 28px rgba(255, 43, 214, 0.35),
+      0 8px 18px rgba(0, 0, 0, 0.55);
+    position: relative;
+  }
+  .card::after {
+    /* faint inner glow so the card looks lit from within */
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 7px;
+    background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.6), transparent 60%);
+    pointer-events: none;
+  }
+  .card.red { color: var(--card-red); }
+  .card.black { color: var(--card-black); }
+  .card .top { font-size: 1.5rem; line-height: 1; position: relative; z-index: 1; }
+  .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; position: relative; z-index: 1; }
+  .card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); position: relative; z-index: 1; }
+  .card.placeholder {
+    background: transparent;
+    border: 2px dashed rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.12) inset;
+  }
+  .card.placeholder::after { display: none; }
+
+  .result {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 10px;
+    background: rgba(8, 4, 20, 0.7);
+    border: 1px solid rgba(196, 107, 255, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(196, 107, 255, 0.15) inset,
+      0 0 24px rgba(196, 107, 255, 0.18);
+  }
+  .result.hidden { display: none; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(196, 107, 255, 0.18);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label {
+    color: var(--muted);
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+  }
+  .result-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .verdict {
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    font-size: 1.7rem;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+  }
+  .verdict.play {
+    color: var(--neon-green);
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px var(--neon-green),
+      0 0 32px var(--neon-green);
+  }
+  .verdict.fold {
+    color: var(--neon-red);
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px var(--neon-red),
+      0 0 32px var(--neon-red);
+  }
+  .verdict.tossup {
+    color: var(--neon-gold);
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px var(--neon-gold),
+      0 0 32px var(--neon-gold);
+  }
+  .feedback {
+    margin-top: 12px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .status {
+    color: var(--muted);
+    margin-top: 14px;
+    font-size: 0.95rem;
+    text-align: center;
+    min-height: 1.3em;
+    letter-spacing: 0.06em;
+  }
+  .status .math-note {
+    display: inline-block;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.55);
+  }
+  .status .verdict {
+    display: inline-block;
+    font-size: 1rem;
+    margin-left: 4px;
+  }
+
+  /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
+  @media (max-width: 440px) {
+    h1 { font-size: 2.1rem; }
+    .card { width: 60px; height: 84px; padding: 5px; border-radius: 6px; }
+    .card .top, .card .bot { font-size: 1rem; }
+    .card .mid { font-size: 1.6rem; }
+    .card-row { gap: 8px; }
+    .cards { gap: 8px; min-height: 100px; padding: 10px 6px; }
+  }
+
+  .breakdown { margin-top: 16px; }
+  .breakdown:empty { display: none; }
+  .breakdown-title, .trajectory-title {
+    color: var(--neon-magenta);
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    text-shadow: 0 0 8px rgba(255, 43, 214, 0.55);
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 52px;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.92rem;
+  }
+  .bar-name { color: var(--ink); }
+  .bar-track {
+    display: block;
+    height: 9px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(196, 107, 255, 0.2);
+  }
+  .bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+    box-shadow:
+      0 0 8px rgba(255, 43, 214, 0.6),
+      0 0 14px rgba(0, 240, 255, 0.4);
+  }
+  .bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  .trajectory { margin-top: 16px; }
+  .trajectory:empty { display: none; }
+  .trajectory svg { width: 100%; height: auto; display: block; }
+  .trajectory .grid { stroke: rgba(196, 107, 255, 0.18); stroke-width: 1; }
+  .trajectory .grid-label { fill: var(--muted); font-size: 10px; text-anchor: end; font-variant-numeric: tabular-nums; }
+  .trajectory .threshold { stroke: var(--neon-gold); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.75; }
+  .trajectory .threshold-label { fill: var(--neon-gold); font-size: 10px; text-anchor: end; opacity: 0.9; }
+  .trajectory .line {
+    stroke: var(--neon-cyan);
+    stroke-width: 2.5;
+    fill: none;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.8));
+  }
+  .trajectory .point {
+    fill: var(--neon-magenta);
+    filter: drop-shadow(0 0 4px rgba(255, 43, 214, 0.9));
+  }
+  .trajectory .point-label { fill: var(--ink); font-size: 11px; font-weight: 700; text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .trajectory .street-label { fill: var(--muted); font-size: 11px; text-anchor: middle; letter-spacing: 0.04em; }
+
+  .chip-strip {
+    display: flex;
+    gap: 14px;
+    margin: 4px 0 18px;
+    justify-content: center;
+    position: relative;
+    z-index: 3;
+  }
+  body.in-hand .chip-strip { display: none; }
+  .chip {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), rgba(255,255,255,0.05) 60%, transparent 70%), #222;
+    border: 2px dashed rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+  }
+  .chip-magenta { color: var(--neon-magenta); background-color: #4a0a3a; }
+  .chip-cyan    { color: var(--neon-cyan);    background-color: #042a33; }
+  .chip-gold    { color: var(--neon-gold);    background-color: #3a2a04; }
+  .chip-violet  { color: var(--neon-violet);  background-color: #2a0a4a; }
+
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    margin-bottom: 16px;
+  }
+  .settings label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    text-transform: none;
+    text-shadow: none;
+    cursor: pointer;
+  }
+  .settings input[type="checkbox"] {
+    accent-color: var(--neon-magenta);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* ---------- Game header (Vegas Neon) ---------- */
+  /* Marquee title — Bebas Neue, hot pink glow, cyan neon-tube underline. */
+  .game-header {
+    text-align: center;
+    margin: 4px 0 18px;
+    padding-bottom: 14px;
+    border-bottom: none;
+    position: relative;
+  }
+  .game-header::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      #ff2bd6 25%,
+      #ffffff 50%,
+      #00f0ff 75%,
+      transparent 100%);
+    box-shadow:
+      0 0 6px #ff2bd6,
+      0 0 14px rgba(255, 43, 214, 0.6),
+      0 0 22px rgba(0, 240, 255, 0.4);
+    border-radius: 2px;
+  }
+  .game-name {
+    font-family: "Bebas Neue", "Monoton", system-ui, sans-serif;
+    font-size: 2.1rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: #fff5fb;
+    text-transform: uppercase;
+    line-height: 1;
+    text-shadow:
+      0 0 4px #ff2bd6,
+      0 0 14px #ff2bd6,
+      0 0 28px rgba(255, 43, 214, 0.65),
+      0 0 48px rgba(255, 43, 214, 0.35);
+  }
+  .game-meta {
+    margin-top: 10px;
+    font-family: "Bebas Neue", system-ui, sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.5em;
+    text-indent: 0.5em; /* compensate trailing letter-spacing */
+    color: #d6fbff;
+    text-transform: uppercase;
+    text-shadow:
+      0 0 4px #00f0ff,
+      0 0 10px rgba(0, 240, 255, 0.7);
+  }
