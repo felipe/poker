@@ -32,6 +32,7 @@
   h1 { margin: 0 0 4px; font-size: 1.6rem; }
   .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
   body.in-hand h1, body.in-hand .sub { display: none; }
+  body.in-hand #deal { display: none; }
   .panel {
     background: var(--panel);
     padding: 20px;
@@ -151,6 +152,8 @@
     font-weight: 600;
   }
   .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
+  .status .math-note { color: var(--ink); margin-bottom: 4px; }
+  .status .verdict { font-size: 0.9rem; letter-spacing: 0.04em; font-weight: 700; }
 
   /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
   @media (max-width: 440px) {
@@ -733,14 +736,34 @@ async function handleCall(userChoice) {
     endHand("Showdown — hand complete.");
     return;
   }
+
+  // Mid-hand play: sim the current street so the user can see whether they
+  // played with or against the math before the next street is dealt.
+  const playedStreet = currentStreet();
+  const numPlayers = parseInt(playersSel.value, 10);
+  const threshold = 1 / numPlayers;
+  statusEl.textContent = "Simulating…";
+  await new Promise(r => setTimeout(r, 20));
+  const { winRate } = simulate(userRevealed, boardRevealed, numPlayers - 1, variantSel.value, 10000);
+  const verdict = Math.abs(winRate - threshold) <= TOSSUP_BAND
+    ? { text: "TOSS-UP", cls: "tossup" }
+    : winRate > threshold
+      ? { text: "PLAY", cls: "play" }
+      : { text: "FOLD", cls: "fold" };
+
   advanceStreet();
   renderHand();
-  promptDecision();
+  statusEl.innerHTML =
+    `<div class="math-note">${playedStreet.label}: math said ` +
+    `<span class="verdict ${verdict.cls}">${verdict.text}</span></div>` +
+    `<div>${currentStreet().label} — play or fold?</div>`;
+  callActions.style.display = "flex";
 }
 
 function endHand(summary) {
   handInProgress = false;
   callActions.style.display = "none";
+  document.body.classList.remove("in-hand");
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
   variantSel.disabled = false;
