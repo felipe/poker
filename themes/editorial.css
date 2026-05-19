@@ -195,13 +195,13 @@
   .actions button { flex: 1; }
 
   /* ---------- settings (in-text) ---------- */
-  .settings {
+  .settings-panel {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 24px;
     margin: 0 0 28px;
   }
-  .settings label {
+  .settings-panel label {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -214,7 +214,7 @@
     letter-spacing: 0;
     cursor: pointer;
   }
-  .settings input[type="checkbox"] {
+  .settings-panel input[type="checkbox"] {
     accent-color: var(--accent);
     width: 14px;
     height: 14px;

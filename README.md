@@ -1,6 +1,8 @@
 # Poker Hand Advisor
 
-A single-page, dependency-free poker odds calculator. Pick a variant and a player count, deal a hand, and decide whether to play or fold — the app then runs a 10,000-iteration Monte Carlo simulation and grades your decision against the math.
+A single-page poker odds calculator with no build step and no npm/runtime packages. Pick a variant and a player count, deal a hand, and decide whether to play or fold — the app then runs a 10,000-iteration Monte Carlo simulation and grades your decision against the math.
+
+The designer themes (`themes/<slug>.css`) pull display typefaces from Google Fonts via CSS `@import` and therefore need a network connection on first paint; the canonical Dark / Felt / Light themes work fully offline.
 
 ## Running
 
