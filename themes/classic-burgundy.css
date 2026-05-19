@@ -1,0 +1,633 @@
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap');
+
+  :root {
+    /* Late-19th-century Monte Carlo palette */
+    --felt: #5c1318;           /* burgundy velvet panel */
+    --felt-deep: #380a0d;
+    --felt-shadow: #1a0405;
+    --burgundy: #3a0d10;        /* dark wine backdrop */
+    --burgundy-deep: #1c0608;
+    --wood: #2a0f08;
+    --gold: #d4a84a;            /* brass / gold leaf */
+    --gold-bright: #efcf7a;
+    --gold-deep: #8a6b1e;
+    --ivory: #f5ecd2;           /* cream */
+    --ivory-soft: #e8dcb8;
+    --royal-red: #a8181b;
+    --card-paper: #faf3df;
+    --card-paper-edge: #d8c99c;
+    --card-black: #14110b;
+    --card-red: #9a1318;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+    color: var(--ivory);
+    min-height: 100vh;
+    padding: 32px 18px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Dark wood / burgundy backdrop with a subtle vignette */
+    background:
+      radial-gradient(ellipse at 50% 0%, #2a1a10 0%, #170c08 45%, #0a0604 100%),
+      var(--burgundy-deep);
+    background-attachment: fixed;
+    position: relative;
+  }
+
+  /* Thin gold rule running across the page header area */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background:
+      linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 45%, var(--gold-deep) 100%);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 6px 18px rgba(0,0,0,0.4);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  h1 {
+    margin: 8px 0 6px;
+    font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    letter-spacing: 0.02em;
+    color: var(--gold-bright);
+    text-align: center;
+    text-shadow:
+      0 1px 0 #6a4d18,
+      0 2px 0 #3a2a0c,
+      0 3px 6px rgba(0,0,0,0.6);
+    /* Ornamental flourishes on either side */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  h1::before, h1::after {
+    content: "";
+    display: inline-block;
+    width: 64px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+
+  .sub {
+    color: var(--ivory-soft);
+    margin: 0 0 28px;
+    font-size: 1.05rem;
+    text-align: center;
+    font-style: italic;
+    max-width: 520px;
+    line-height: 1.45;
+    opacity: 0.85;
+  }
+  .sub::before, .sub::after {
+    content: "\201C";
+    color: var(--gold);
+    font-family: "Playfair Display", serif;
+    font-size: 1.4rem;
+    opacity: 0.6;
+    margin: 0 4px;
+  }
+  .sub::after { content: "\201D"; }
+
+  body.in-hand h1, body.in-hand .sub { display: none; }
+  body.in-hand #deal { display: none; }
+
+  /* The felt panel — green baize on a brass-framed table */
+  .panel {
+    position: relative;
+    padding: 28px 26px 26px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 580px;
+    color: var(--ivory);
+    /* Felt texture: layered radial mottle + subtle diagonal weave */
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.05), transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(0,0,0,0.35), transparent 60%),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0 2px, transparent 2px 4px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 4px),
+      linear-gradient(180deg, var(--felt) 0%, var(--felt-deep) 100%);
+    /* Brass frame: outer dark wood ring + inner gold inlay */
+    border: 1px solid var(--gold-deep);
+    box-shadow:
+      0 0 0 4px var(--wood),
+      0 0 0 5px var(--gold-deep),
+      0 0 0 8px var(--wood),
+      0 0 0 9px var(--gold),
+      0 18px 40px rgba(0,0,0,0.55),
+      inset 0 0 0 1px rgba(255,255,255,0.04),
+      inset 0 0 60px rgba(0,0,0,0.35);
+  }
+
+  /* Inner gold-leaf hairline that traces the panel edge */
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(212, 168, 74, 0.45);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  /* Corner flourishes (tiny gold diamonds) */
+  .panel::after {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border-radius: 6px;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 0 0, var(--gold) 0 3px, transparent 4px),
+      radial-gradient(circle at 100% 0, var(--gold) 0 3px, transparent 4px),
+      radial-gradient(circle at 0 100%, var(--gold) 0 3px, transparent 4px),
+      radial-gradient(circle at 100% 100%, var(--gold) 0 3px, transparent 4px);
+    opacity: 0.75;
+  }
+
+  .controls {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .control { flex: 1; min-width: 160px; }
+
+  label {
+    display: block;
+    font-family: "Playfair Display", serif;
+    font-size: 0.7rem;
+    color: var(--gold-bright);
+    margin-bottom: 6px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  select, button {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--gold-deep);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.25)),
+      var(--felt-deep);
+    color: var(--ivory);
+    font-size: 1.05rem;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      inset 0 -1px 0 rgba(0,0,0,0.4);
+  }
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--gold) 50%),
+      linear-gradient(135deg, var(--gold) 50%, transparent 50%),
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.25));
+    background-position:
+      calc(100% - 16px) 50%,
+      calc(100% - 11px) 50%,
+      0 0;
+    background-size: 5px 5px, 5px 5px, 100% 100%;
+    background-repeat: no-repeat;
+    background-color: var(--felt-deep);
+    padding-right: 32px;
+  }
+  select:focus, button:focus { outline: 1px solid var(--gold-bright); outline-offset: 1px; }
+
+  button {
+    border: 1px solid var(--gold-deep);
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    transition: transform 0.05s, filter 0.15s, box-shadow 0.15s;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.1); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; filter: saturate(0.6); }
+
+  /* Embossed brass primary button */
+  .btn-primary {
+    background:
+      linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 50%, var(--gold-deep) 100%);
+    color: #2a1a02;
+    border: 1px solid #5a4310;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.5),
+      inset 0 -2px 4px rgba(0,0,0,0.25),
+      0 2px 6px rgba(0,0,0,0.4);
+  }
+  /* Royal-green play button with gold rim */
+  .btn-play {
+    background:
+      linear-gradient(180deg, #2f8f5d 0%, #1d6440 60%, #0e4128 100%);
+    color: var(--ivory);
+    border: 1px solid var(--gold);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      inset 0 -2px 4px rgba(0,0,0,0.35),
+      0 2px 6px rgba(0,0,0,0.4);
+  }
+  /* Royal-red fold button with gold rim */
+  .btn-fold {
+    background:
+      linear-gradient(180deg, #c0282b 0%, #8a161a 60%, #4f0a0c 100%);
+    color: var(--ivory);
+    border: 1px solid var(--gold);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      inset 0 -2px 4px rgba(0,0,0,0.35),
+      0 2px 6px rgba(0,0,0,0.4);
+  }
+  .actions { display: flex; gap: 12px; margin-top: 14px; position: relative; z-index: 1; }
+  .actions button { flex: 1; }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 140px;
+    margin: 22px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .card-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  .board { margin-top: 4px; min-height: 0; }
+  .board::before {
+    content: "\2014  The Board  \2014";
+    font-family: "Playfair Display", serif;
+    color: var(--gold-bright);
+    font-size: 0.7rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .board.hidden { display: none; }
+
+  /* Real playing cards: ivory paper, soft shadow, gold-leaf hairline */
+  .card {
+    width: 88px;
+    height: 124px;
+    background:
+      radial-gradient(ellipse at 30% 20%, #ffffff 0%, var(--card-paper) 55%, var(--card-paper-edge) 100%);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px 9px;
+    font-family: "Playfair Display", "Times New Roman", serif;
+    font-weight: 700;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 0 0 1px rgba(170, 140, 70, 0.55),
+      0 6px 14px rgba(0,0,0,0.55),
+      0 1px 2px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  /* Inner card hairline — like a beveled playing-card edge */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(170, 140, 70, 0.35);
+    border-radius: 5px;
+    pointer-events: none;
+  }
+  .card.red { color: var(--card-red); }
+  .card.black { color: var(--card-black); }
+  .card .top { font-size: 1.5rem; line-height: 1; }
+  .card .mid {
+    font-size: 2.6rem;
+    text-align: center;
+    line-height: 1;
+    font-weight: 500;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); }
+  .card.placeholder {
+    background:
+      repeating-linear-gradient(45deg, rgba(212,168,74,0.08) 0 6px, transparent 6px 12px);
+    border: 1px dashed rgba(212, 168, 74, 0.5);
+    box-shadow: none;
+  }
+  .card.placeholder::before { display: none; }
+
+  /* Result panel — a tiled card on the felt with brass border */
+  .result {
+    margin-top: 18px;
+    padding: 18px 18px 16px;
+    border-radius: 6px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.45)),
+      var(--felt-shadow);
+    border: 1px solid var(--gold-deep);
+    box-shadow:
+      inset 0 0 0 1px rgba(212,168,74,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 4px 14px rgba(0,0,0,0.4);
+    position: relative;
+    z-index: 1;
+  }
+  .result.hidden { display: none; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(212, 168, 74, 0.22);
+    align-items: baseline;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label {
+    color: var(--ivory-soft);
+    font-style: italic;
+    font-size: 1rem;
+  }
+  .result-val {
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ivory);
+    font-size: 1.1rem;
+  }
+
+  /* Verdict — declared like a proclamation, gold-leaf treatment */
+  .verdict {
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .verdict.play {
+    color: #f1d77a;
+    background: linear-gradient(180deg, #f7e08f 0%, #d4a84a 55%, #8a6b1e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  }
+  .verdict.fold {
+    color: var(--royal-red);
+    background: linear-gradient(180deg, #e8484a 0%, #a8181b 55%, #4f0a0c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .verdict.tossup {
+    color: var(--ivory);
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--gold) 55%, var(--gold-deep) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .feedback {
+    margin-top: 12px;
+    text-align: center;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ivory-soft);
+  }
+
+  .status {
+    color: var(--ivory-soft);
+    margin-top: 14px;
+    font-size: 1rem;
+    text-align: center;
+    min-height: 1.2em;
+    font-style: italic;
+    position: relative;
+    z-index: 1;
+  }
+  .status .math-note {
+    color: var(--ivory);
+    margin-bottom: 6px;
+    font-style: normal;
+    font-family: "Playfair Display", serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+  .status .verdict {
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-style: italic;
+  }
+
+  /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
+  @media (max-width: 440px) {
+    h1 { font-size: 1.7rem; }
+    h1::before, h1::after { width: 28px; }
+    .sub { font-size: 0.95rem; }
+    .panel { padding: 20px 14px; }
+    .card { width: 60px; height: 84px; padding: 5px 6px; border-radius: 6px; }
+    .card::before { inset: 2px; border-radius: 4px; }
+    .card .top, .card .bot { font-size: 1rem; }
+    .card .mid { font-size: 1.7rem; }
+    .card-row { gap: 8px; }
+    .cards { gap: 8px; min-height: 100px; }
+  }
+
+  .breakdown { margin-top: 16px; }
+  .breakdown:empty { display: none; }
+  .breakdown-title, .trajectory-title {
+    font-family: "Playfair Display", serif;
+    color: var(--gold-bright);
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-style: italic;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(212, 168, 74, 0.3);
+    padding-bottom: 4px;
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 54px;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 0.98rem;
+  }
+  .bar-name { color: var(--ivory); font-style: italic; }
+  .bar-track {
+    display: block;
+    height: 8px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 168, 74, 0.25);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .bar-fill {
+    display: block;
+    height: 100%;
+    background:
+      linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 50%, var(--gold-deep) 100%);
+    border-radius: 1px;
+    box-shadow: 0 0 4px rgba(239, 207, 122, 0.4);
+  }
+  .bar-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--gold-bright);
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+  }
+
+  .trajectory { margin-top: 16px; }
+  .trajectory:empty { display: none; }
+  .trajectory svg { width: 100%; height: auto; display: block; }
+  .trajectory .grid { stroke: rgba(212, 168, 74, 0.15); stroke-width: 1; }
+  .trajectory .grid-label {
+    fill: var(--ivory-soft);
+    font-size: 10px;
+    text-anchor: end;
+    font-variant-numeric: tabular-nums;
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+  }
+  .trajectory .threshold { stroke: var(--royal-red); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.85; }
+  .trajectory .threshold-label {
+    fill: var(--royal-red);
+    font-size: 10px;
+    text-anchor: end;
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+  }
+  .trajectory .line { stroke: var(--gold-bright); stroke-width: 2.5; fill: none; filter: drop-shadow(0 0 2px rgba(239,207,122,0.5)); }
+  .trajectory .point { fill: var(--gold-bright); stroke: var(--gold-deep); stroke-width: 1; }
+  .trajectory .point-label {
+    fill: var(--ivory);
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+    font-variant-numeric: tabular-nums;
+    font-family: "Playfair Display", serif;
+  }
+  .trajectory .street-label {
+    fill: var(--ivory-soft);
+    font-size: 11px;
+    text-anchor: middle;
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+  }
+
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .settings label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--ivory-soft);
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: "Cormorant Garamond", serif;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .settings input[type="checkbox"] {
+    accent-color: var(--gold);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* ---------- Game header (Classic Casino) ---------- */
+  /* Engraved Playfair italic with tapered gold rules flanking the name. */
+  .game-header {
+    text-align: center;
+    margin: 0 0 18px;
+    padding: 4px 0 16px;
+    border-bottom: none;
+    position: relative;
+  }
+  .game-header::after {
+    content: "";
+    display: block;
+    margin: 14px auto 0;
+    width: 70%;
+    height: 1px;
+    background:
+      linear-gradient(90deg,
+        transparent 0%,
+        rgba(201, 168, 106, 0.0) 6%,
+        #c9a86a 30%,
+        #f1d997 50%,
+        #c9a86a 70%,
+        rgba(201, 168, 106, 0.0) 94%,
+        transparent 100%);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  }
+  .game-name {
+    font-family: "Playfair Display", "Times New Roman", serif;
+    font-style: italic;
+    font-size: 1.85rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.005em;
+    background:
+      linear-gradient(180deg,
+        #fbe6a3 0%,
+        #e8c66b 28%,
+        #b58633 60%,
+        #d6ad55 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.55),
+      0 2px 4px rgba(0, 0, 0, 0.35);
+  }
+  /* French flourishes flanking the name */
+  .game-name::before { content: "❖ "; color: #c9a86a; -webkit-text-fill-color: #c9a86a; font-size: 0.7em; vertical-align: 0.18em; opacity: 0.85; }
+  .game-name::after  { content: " ❖"; color: #c9a86a; -webkit-text-fill-color: #c9a86a; font-size: 0.7em; vertical-align: 0.18em; opacity: 0.85; }
+  .game-meta {
+    margin-top: 10px;
+    font-family: "Cormorant Garamond", "Playfair Display", serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    text-transform: lowercase;
+    color: #d4b97a;
+  }
+  .game-meta::first-letter { text-transform: uppercase; }

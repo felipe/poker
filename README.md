@@ -58,10 +58,11 @@ On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick si
 ```
 index.html         markup + inline base CSS + game logic (single file)
 themes/            on-demand stylesheets for designer themes
-  vegas-neon.css      neon marquee
-  classic-casino.css  Monte Carlo felt + gold leaf
-  brutalist.css       swiss/data-sheet monospace
-  editorial.css       serif magazine spread
+  vegas-neon.css        neon marquee
+  classic-casino.css    Monte Carlo green felt on burgundy backdrop, gold leaf
+  classic-burgundy.css  burgundy velvet panel on dark wood, gold leaf
+  brutalist.css         swiss/data-sheet monospace
+  editorial.css         serif magazine spread
 README.md
 .gitignore
 ```

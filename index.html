@@ -9,7 +9,7 @@
   // (dark/felt/light) just set data-theme; custom designs are stylesheets
   // loaded from themes/<slug>.css.
   (function () {
-    var CUSTOM = ["vegas-neon", "classic-casino", "brutalist", "editorial"];
+    var CUSTOM = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
     try {
       var t = localStorage.getItem("theme") || "dark";
       if (CUSTOM.indexOf(t) >= 0) {
@@ -436,6 +436,7 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
           <optgroup label="Designs">
             <option value="vegas-neon">Vegas Neon</option>
             <option value="classic-casino">Classic Casino</option>
+            <option value="classic-burgundy">Classic Burgundy</option>
             <option value="brutalist">Brutalist</option>
             <option value="editorial">Editorial</option>
           </optgroup>
@@ -1090,7 +1091,7 @@ settingsToggleEl.addEventListener("click", () => {
   settingsToggleEl.setAttribute("aria-expanded", String(open));
 });
 
-const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "brutalist", "editorial"];
+const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
 
 function applyTheme(slug) {
   let link = document.getElementById("theme-css");
