@@ -124,7 +124,7 @@ golden("55 set on dry flop",
 
 golden("trips on paired board",
   { user: ["Ks", "Th"], board: ["Kc", "Kd", "4s"], variant: "holdem" },
-  "Trips, kings — strong, but the paired board already gives a full house to anyone holding a matching pocket pair.");
+  "Trips, kings — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.");
 
 golden("board trips (player not contributing)",
   { user: ["7c", "8d"], board: ["5s", "5h", "5c"], variant: "holdem" },
