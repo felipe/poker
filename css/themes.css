@@ -1,0 +1,60 @@
+/* Built-in theme variable defs.
+ *
+ * Selection lives on <html data-theme="...">. Three built-ins; designer themes
+ * are full stylesheets in themes/*.css loaded on demand.
+ */
+
+:root,
+[data-theme="dark"] {
+  --bg: #0e1a14;
+  --panel: #16271e;
+  --ink: #e8f0ea;
+  --muted: #94a59b;
+  --accent: #ffd166;
+  --good: #4ade80;
+  --bad: #f87171;
+  --card-bg: #fafafa;
+  --card-black: #1a1a1a;
+  --card-red: #c0392b;
+  --border: #2a3f33;
+  --input-bg: #0e1a14;
+  --track: #1f3327;
+  --result-bg: #0e1a14;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="felt"] {
+  --bg: #07392a;
+  --panel: #0a5238;
+  --ink: #f5efe0;
+  --muted: #a8c8b3;
+  --accent: #ffd166;
+  --good: #6ee7a3;
+  --bad: #fca5a5;
+  --card-bg: #fafafa;
+  --card-black: #1a1a1a;
+  --card-red: #c0392b;
+  --border: #1a5a40;
+  --input-bg: #07392a;
+  --track: #134a32;
+  --result-bg: #07392a;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --ink: #111827;
+  --muted: #6b7280;
+  --accent: #d97706;
+  --good: #15803d;
+  --bad: #dc2626;
+  --card-bg: #ffffff;
+  --card-black: #1a1a1a;
+  --card-red: #c0392b;
+  --border: #d1d5db;
+  --input-bg: #f9fafb;
+  --track: #e5e7eb;
+  --result-bg: #f9fafb;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}

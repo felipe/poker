@@ -58,16 +58,29 @@ On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick si
 ## Project layout
 
 ```
-index.html         markup + inline base CSS + game logic (single file)
-themes/            on-demand stylesheets for designer themes
-  vegas-neon.css        neon marquee
-  classic-casino.css    Monte Carlo green felt on burgundy backdrop, gold leaf
-  classic-burgundy.css  burgundy velvet panel on dark wood, gold leaf
-  brutalist.css         swiss/data-sheet monospace
-  editorial.css         serif magazine spread
+index.html             slim markup, links CSS, loads js/main.js as a module
+css/
+  themes.css           built-in theme variable defs (Dark / Felt / Light)
+  base.css             structural styles using the variables
+js/
+  main.js              DOM refs, state, flow, event wiring (entry)
+  evaluator.js         card model, deck, shuffle, hand evaluator
+  variants.js          VARIANTS, row layouts, player cap, toss-up band
+  simulate.js          Monte Carlo simulator
+  ui.js                pure DOM helpers: card / breakdown / trajectory render
+themes/                on-demand stylesheets for designer themes
+  vegas-neon.css         neon marquee
+  classic-casino.css     Monte Carlo green felt on burgundy backdrop, gold leaf
+  classic-burgundy.css   burgundy velvet panel on dark wood, gold leaf
+  brutalist.css          swiss/data-sheet monospace
+  editorial.css          serif magazine spread
 README.md
 .gitignore
 ```
+
+JS modules use native ES `import` / `export` — no bundler. Each module has
+`// @ts-check` at the top, so VS Code's TypeScript service gives you inline
+type errors and autocomplete from the JSDoc shapes without any build step.
 
 ## Themes
 
@@ -80,7 +93,7 @@ Two kinds of themes:
 
 ### Adding a built-in theme
 
-In the inline `<style>` block of `index.html`:
+In `css/themes.css`:
 
 ```css
 [data-theme="mytheme"] {
@@ -102,18 +115,18 @@ In the inline `<style>` block of `index.html`:
 }
 ```
 
-Then add `<option value="mytheme">My Theme</option>` to the **Built-in** `<optgroup>`.
+Then add `<option value="mytheme">My Theme</option>` to the **Built-in** `<optgroup>` in `index.html`.
 
 ### Adding a designer theme
 
 1. Create `themes/mytheme.css` with whatever CSS you want. A Google Font `@import` at the top of the file is fine.
-2. Add `<option value="mytheme">My Theme</option>` to the **Designs** `<optgroup>`.
-3. Add `"mytheme"` to the `CUSTOM` array (the inline `<head>` early-paint script) **and** to `CUSTOM_THEMES` (the main script).
+2. Add `<option value="mytheme">My Theme</option>` to the **Designs** `<optgroup>` in `index.html`.
+3. Add `"mytheme"` to the `CUSTOM` array (early-paint script in `index.html` `<head>`) **and** to `CUSTOM_THEMES` (top of `js/main.js`).
 4. Style at minimum `.game-name` and `.game-meta` so the header feels native — the canonical (Dark) header treatment will leak through otherwise.
 
 ## Adding a variant
 
-Add an entry to the `VARIANTS` object in `index.html`. Each entry declares the total `hole` and `board` card count, plus a `streets` array. Each street has:
+Add an entry to the `VARIANTS` object in `js/variants.js`. Each entry declares the total `hole` and `board` card count, plus a `streets` array. Each street has:
 
 - `label` — shown in the status prompt and on the equity chart
 - `foldText` — sentence fragment for the fold summary ("on the flop")

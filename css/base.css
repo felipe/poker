@@ -1,0 +1,317 @@
+/* Structural CSS for the canonical (Dark / Felt / Light) presentation.
+ *
+ * All theme-sensitive colors are CSS variables defined in themes.css and
+ * overridden by [data-theme="..."] selectors. Designer themes in themes/*.css
+ * replace this entirely when loaded — they're appended to <head> after this
+ * file so they win the cascade.
+ */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
+body.in-hand h1, body.in-hand .sub { display: none; }
+body.in-hand #deal { display: none; }
+
+.panel {
+  background: var(--panel);
+  padding: 20px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Game header (canonical) ---------- */
+.game-header {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.game-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+}
+.game-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+.game-meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Felt — gold pinstripe under the name. */
+[data-theme="felt"] .game-header { border-bottom-color: rgba(255, 209, 102, 0.22); }
+[data-theme="felt"] .game-header::after {
+  background: linear-gradient(90deg, transparent, var(--accent) 35%, var(--accent) 65%, transparent);
+  width: 96px;
+}
+[data-theme="felt"] .game-name { letter-spacing: 0; }
+[data-theme="felt"] .game-meta { color: var(--accent); opacity: 0.75; }
+
+/* Light — restrained, slimmer weight, tighter accent rule. */
+[data-theme="light"] .game-header { border-bottom-color: rgba(0, 0, 0, 0.08); }
+[data-theme="light"] .game-header::after { width: 20px; }
+[data-theme="light"] .game-name { font-weight: 600; letter-spacing: -0.02em; }
+
+/* ---------- Form controls ---------- */
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+select, button {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--ink);
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button {
+  border: none;
+  font-weight: 600;
+  transition: transform 0.05s, opacity 0.15s;
+}
+button:hover:not(:disabled) { opacity: 0.9; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent); color: #1a1a1a; }
+.btn-play { background: var(--good); color: #0a1f10; }
+.btn-fold { background: var(--bad); color: #2a0a0a; }
+.actions { display: flex; gap: 10px; margin-top: 12px; }
+.actions button { flex: 1; }
+
+/* ---------- Cards ---------- */
+.cards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 140px;
+  margin: 20px 0;
+}
+.card-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.board { margin-top: 4px; min-height: 0; }
+.board::before {
+  content: "Board";
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.board.hidden { display: none; }
+
+.card {
+  width: 88px;
+  height: 124px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+.card.red { color: var(--card-red); }
+.card.black { color: var(--card-black); }
+.card .top { font-size: 1.5rem; line-height: 1; }
+.card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
+.card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); }
+.card.placeholder {
+  background: transparent;
+  border: 2px dashed var(--border);
+  box-shadow: none;
+}
+
+/* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
+@media (max-width: 440px) {
+  .card { width: 60px; height: 84px; padding: 5px; border-radius: 6px; }
+  .card .top, .card .bot { font-size: 1rem; }
+  .card .mid { font-size: 1.6rem; }
+  .card-row { gap: 8px; }
+  .cards { gap: 8px; min-height: 100px; }
+}
+
+/* ---------- Result panel ---------- */
+.result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--result-bg);
+  border: 1px solid var(--border);
+}
+.result.hidden { display: none; }
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--track);
+}
+.result-row:last-child { border-bottom: none; }
+.result-label { color: var(--muted); }
+.result-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.verdict { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.05em; }
+.verdict.play { color: var(--good); }
+.verdict.fold { color: var(--bad); }
+.verdict.tossup { color: var(--accent); }
+
+.feedback { margin-top: 10px; text-align: center; font-weight: 600; }
+
+.status {
+  color: var(--muted);
+  margin-top: 12px;
+  font-size: 0.9rem;
+  text-align: center;
+  min-height: 1.2em;
+}
+.status .math-note { color: var(--ink); margin-bottom: 4px; }
+.status .verdict { font-size: 0.9rem; letter-spacing: 0.04em; font-weight: 700; }
+
+/* ---------- Breakdown bars ---------- */
+.breakdown { margin-top: 14px; }
+.breakdown:empty { display: none; }
+.breakdown-title {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 52px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.9rem;
+}
+.bar-name { color: var(--ink); }
+.bar-track {
+  display: block;
+  height: 8px;
+  background: var(--track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* ---------- Equity trajectory SVG chart ---------- */
+.trajectory { margin-top: 14px; }
+.trajectory:empty { display: none; }
+.trajectory-title {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.trajectory svg { width: 100%; height: auto; display: block; }
+.trajectory .grid { stroke: var(--track); stroke-width: 1; }
+.trajectory .grid-label { fill: var(--muted); font-size: 10px; text-anchor: end; font-variant-numeric: tabular-nums; }
+.trajectory .threshold { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.trajectory .threshold-label { fill: var(--muted); font-size: 10px; text-anchor: end; }
+.trajectory .line { stroke: var(--accent); stroke-width: 2; fill: none; }
+.trajectory .point { fill: var(--accent); }
+.trajectory .point-label { fill: var(--ink); font-size: 11px; font-weight: 600; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.trajectory .street-label { fill: var(--muted); font-size: 11px; text-anchor: middle; }
+
+/* ---------- Settings panel ---------- */
+.settings-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.settings-toggle {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  width: auto;
+  letter-spacing: 0.04em;
+}
+.settings-toggle:hover { color: var(--ink); }
+.settings-toggle::before { content: "⚙ "; }
+
+.settings-panel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+.settings-panel.hidden { display: none; }
+.settings-panel label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.settings-panel input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.settings-panel select {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+}

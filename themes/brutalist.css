@@ -461,11 +461,9 @@
   .trajectory .point-label { fill: var(--ink); font-size: 10px; font-weight: 800; text-anchor: middle; font-variant-numeric: tabular-nums; font-family: var(--mono); }
   .trajectory .street-label { fill: var(--muted); font-size: 9px; text-anchor: middle; font-family: var(--mono); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
 
-  .settings-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    margin-bottom: 14px;
+  /* Boxed settings — preserve the brutalist border and inner padding;
+     layout (column stack) comes from base. */
+  .settings-panel:not(.hidden) {
     padding: 10px 12px;
     border: 1px solid var(--rule);
   }
