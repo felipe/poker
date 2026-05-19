@@ -23,6 +23,8 @@ const RANK_PLURAL = {
 function rankName(r) { return RANK_NAMES[/** @type {keyof typeof RANK_NAMES} */ (r)] || String(r); }
 /** @param {number} r */
 function rankPlural(r) { return RANK_PLURAL[/** @type {keyof typeof RANK_PLURAL} */ (r)] || (String(r) + "s"); }
+/** "an" before ace/eight, "a" otherwise. */
+function aOrAn(/** @type {string} */ word) { return /^[aeiou]/i.test(word) ? "an" : "a"; }
 
 /** @param {Card[]} cards */
 function rankCounts(cards) {
@@ -65,29 +67,29 @@ export function explain(ctx) {
  * adjustment so the reader ends with table-size context.
  *
  * @param {Object} ctx
- * @param {Array<{label: string, user: Card[], board: Card[]}>} ctx.streetHistory
+ * @param {Array<{label: string, user: Card[], board: Card[]}>} ctx.trajectory
  * @param {number} ctx.numPlayers
  * @param {string} ctx.variant
  * @returns {string[]}  one entry per paragraph; join with blank lines to render
  */
 export function explainTrajectory(ctx) {
-  const { streetHistory, numPlayers, variant } = ctx;
+  const { trajectory, numPlayers, variant } = ctx;
   /** @type {string[]} */
   const paragraphs = [];
 
-  if (streetHistory.length === 0) {
+  if (!trajectory || trajectory.length === 0) {
     paragraphs.push(playerCountLine(numPlayers));
     return paragraphs;
   }
 
   if (variant === "holdem") {
-    paragraphs.push(...holdemTrajectoryParagraphs(streetHistory));
+    paragraphs.push(...holdemTrajectoryParagraphs(trajectory));
   } else {
     // 5-Card Draw and 7-Stud — each street is a fresh snapshot, no community
     // board to threaten you. We label each one so the progression is clear.
-    for (const s of streetHistory) {
+    for (const s of trajectory) {
       const para = snapshotParagraph(s.user, s.board, variant);
-      paragraphs.push(streetHistory.length > 1 ? `${s.label}: ${decap(para)}` : para);
+      paragraphs.push(trajectory.length > 1 ? `${s.label}: ${decap(para)}` : para);
     }
   }
 
@@ -108,6 +110,189 @@ export function explainTrajectory(ctx) {
  */
 export function streetSummary(ctx) {
   return snapshotParagraph(ctx.userCards, ctx.boardCards, ctx.variant);
+}
+
+/**
+ * Whole-hand synthesis. Names the final hand in plain terms, summarizes the
+ * equity arc end-to-end, and explicitly calls out the biggest single-street
+ * drop with the board change that caused it. Captures the "why did my odds
+ * go down when I made a full house" moment.
+ *
+ * Returns null when there's not enough trajectory to recap (single-street
+ * hands, pre-flop folds, no-board variants — those streets already say what
+ * happened in line).
+ *
+ * @param {Object} ctx
+ * @param {Array<{label: string, user: Card[], board: Card[], winRate: number}>} ctx.trajectory
+ * @param {string} ctx.variant
+ * @returns {string|null}
+ */
+export function recapHand(ctx) {
+  const { trajectory, variant } = ctx;
+  if (!trajectory || trajectory.length < 2) return null;
+  if (variant !== "holdem") return null;
+
+  const first = trajectory[0];
+  const last = trajectory[trajectory.length - 1];
+  const startPct = Math.round(first.winRate * 100);
+  const endPct = Math.round(last.winRate * 100);
+  const delta = last.winRate - first.winRate;
+  const finalHand = describeFinalHand(last.user, last.board);
+
+  const SIG = 0.05;
+
+  // Find the biggest single-street equity drop and where it happened.
+  let bigDrop = 0;
+  let dropIdx = -1;
+  for (let i = 1; i < trajectory.length; i++) {
+    const d = trajectory[i - 1].winRate - trajectory[i].winRate;
+    if (d > bigDrop) { bigDrop = d; dropIdx = i; }
+  }
+
+  if (delta >= SIG) {
+    return `You ended with ${finalHand}, and your equity climbed from ${startPct}% to ${endPct}% along the way — the board helped you more than it helped opponents.`;
+  }
+
+  if (delta <= -SIG) {
+    let why = "";
+    if (dropIdx >= 0 && bigDrop > SIG) {
+      const dropStreet = trajectory[dropIdx];
+      const prev = trajectory[dropIdx - 1];
+      const reason = reasonForDrop(prev.board, dropStreet.board, last.user);
+      const dropPP = Math.round(bigDrop * 100);
+      if (reason) {
+        why = ` The biggest drop was on the ${dropStreet.label.toLowerCase()} (${dropPP} points): ${reason}.`;
+      } else {
+        why = ` The biggest single-street drop was on the ${dropStreet.label.toLowerCase()} (${dropPP} points).`;
+      }
+    }
+    return `You ended with ${finalHand}, but your equity fell from ${startPct}% to ${endPct}%.${why} Made hands can mislead — every card on the board that helps you can help opponents more.`;
+  }
+
+  return `Your equity stayed roughly steady (${startPct}% → ${endPct}%), ending with ${finalHand}.`;
+}
+
+/**
+ * Short, prose-friendly description of the best 5-card hand. "Nines full of
+ * jacks", "top pair, kings", "ace-high", etc. Differs from holdemMadeHand by
+ * dropping the advice tail and using a noun phrase the recap can slot into a
+ * sentence ("You ended with ___").
+ *
+ * @param {Card[]} user
+ * @param {Card[]} board
+ */
+function describeFinalHand(user, board) {
+  const all = user.concat(board);
+  if (all.length < 5) {
+    // Folded before reaching a full hand — describe the holding state instead.
+    if (board.length === 0) return "your starting hand";
+    return "the hand at the fold point";
+  }
+  const score = evaluate(all);
+  const cat = Math.floor(score / CATEGORY_DIVISOR);
+  const rc = rankCounts(all);
+
+  if (cat === 8) return "a straight flush";
+  if (cat === 7) {
+    let q = 0;
+    for (let r = 14; r >= 2; r--) if (rc[r] === 4) { q = r; break; }
+    return `four ${rankPlural(q)}`;
+  }
+  if (cat === 6) {
+    let t = 0, p = 0;
+    for (let r = 14; r >= 2; r--) if (rc[r] >= 3 && !t) t = r;
+    for (let r = 14; r >= 2; r--) if (rc[r] >= 2 && r !== t && !p) p = r;
+    return `${rankPlural(t)} full of ${rankPlural(p)}`;
+  }
+  if (cat === 5) return "a flush";
+  if (cat === 4) return "a straight";
+  if (cat === 3) {
+    let t = 0;
+    for (let r = 14; r >= 2; r--) if (rc[r] === 3) { t = r; break; }
+    return `three ${rankPlural(t)}`;
+  }
+  if (cat === 2) {
+    /** @type {number[]} */ const ps = [];
+    for (let r = 14; r >= 2; r--) if (rc[r] >= 2) ps.push(r);
+    return `two pair, ${rankPlural(ps[0])} and ${rankPlural(ps[1])}`;
+  }
+  if (cat === 1) {
+    for (let r = 14; r >= 2; r--) if (rc[r] === 2) return `a pair of ${rankPlural(r)}`;
+  }
+  const highs = all.map(c => c.rank).sort((a, b) => b - a);
+  return `${rankName(highs[0])}-high`;
+}
+
+/**
+ * Identifies what new threat appeared on the board between two snapshots.
+ * Returns a fragment that can be spliced into the recap sentence after
+ * "the [street] [reason]" — e.g., "the ace on the board means anyone holding
+ * an ace makes a full house bigger than your nines-full-of-jacks". Returns
+ * null when the change isn't categorically interesting.
+ *
+ * @param {Card[]} prevBoard
+ * @param {Card[]} curBoard
+ * @param {Card[]} userCards
+ */
+function reasonForDrop(prevBoard, curBoard, userCards) {
+  if (curBoard.length <= prevBoard.length) return null;
+  const prevRC = rankCounts(prevBoard);
+  const curRC = rankCounts(curBoard);
+  const newCards = curBoard.slice(prevBoard.length);
+
+  // User's pocket pair (Hold'em pre-flop holding), if any.
+  let userPair = 0;
+  if (userCards.length === 2 && userCards[0].rank === userCards[1].rank) {
+    userPair = userCards[0].rank;
+  }
+
+  // The key "made-hand-but-equity-fell" case: board already had trips and the
+  // new street brought a rank higher than the user's pocket pair. Anyone with
+  // that new rank in hand now has a bigger boat.
+  let boardTrips = 0;
+  for (let r = 14; r >= 2; r--) if (prevRC[r] >= 3) { boardTrips = r; break; }
+  if (boardTrips && userPair) {
+    for (const c of newCards) {
+      if (c.rank !== boardTrips && c.rank > userPair) {
+        return `the ${rankName(c.rank)} on the board means anyone holding ${aOrAn(rankName(c.rank))} ${rankName(c.rank)} makes a full house bigger than your ${rankPlural(boardTrips)}-full-of-${rankPlural(userPair)}`;
+      }
+    }
+  }
+
+  // Board just turned into three-of-a-kind.
+  for (let r = 14; r >= 2; r--) {
+    if (prevRC[r] < 3 && curRC[r] === 3) {
+      return `the third ${rankName(r)} put trips on the board — any pocket pair beats one pair, and full houses come easy`;
+    }
+  }
+
+  // Board just paired (including the flop landing already-paired).
+  for (let r = 14; r >= 2; r--) {
+    if (prevRC[r] < 2 && curRC[r] === 2) {
+      return `the board paired on ${rankPlural(r)}, opening trips and full houses for anyone with that rank`;
+    }
+  }
+
+  // Three-of-a-suit appeared.
+  const prevSC = suitCounts(prevBoard);
+  const curSC = suitCounts(curBoard);
+  for (let s = 0; s < 4; s++) {
+    if (prevSC[s] < 3 && curSC[s] >= 3) {
+      return `a third card of one suit hit the board — anyone holding two of that suit has a flush`;
+    }
+  }
+
+  // Overcard to the user's strongest holding.
+  if (userCards.length > 0) {
+    const userMax = Math.max(...userCards.map(c => c.rank));
+    for (const c of newCards) {
+      if (c.rank > userMax) {
+        return `the ${rankName(c.rank)} outranks your hand — anyone holding ${aOrAn(rankName(c.rank))} ${rankName(c.rank)} just made top pair`;
+      }
+    }
+  }
+
+  return null;
 }
 
 /** @param {Card[]} user @param {Card[]} board @param {string} variant */

@@ -298,7 +298,7 @@ async function runSimulationAndRender() {
   verdictEl.textContent = verdictText;
   verdictEl.className = "result-val verdict " + verdictClass;
   renderBreakdown(breakdownEl, final.distribution, variant, final.user, final.board);
-  renderExplanation(explanationEl, { streetHistory: history, numPlayers, variant });
+  renderExplanation(explanationEl, { trajectory, numPlayers, variant });
   renderTrajectory(trajectoryEl, trajectory, threshold);
   resultEl.classList.remove("hidden");
   resultsVisible = true;
