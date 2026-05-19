@@ -72,7 +72,8 @@ themes/                on-demand stylesheets for designer themes
   vegas-neon.css         neon marquee
   classic-casino.css     Monte Carlo green felt on burgundy backdrop, gold leaf
   classic-burgundy.css   burgundy velvet panel on dark wood, gold leaf
-  brutalist.css          swiss/data-sheet monospace
+  brutalist.css          swiss/data-sheet monospace on paper (default)
+  brutalist-dark.css     companion dark variant
   editorial.css          serif magazine spread
 README.md
 .gitignore
