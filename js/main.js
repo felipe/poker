@@ -303,7 +303,7 @@ async function runSimulationAndRender() {
 }
 
 // ---------- theme ----------
-const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
+const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "brutalist-dark", "editorial"];
 
 /** @param {string} slug */
 function applyTheme(slug) {
@@ -341,8 +341,8 @@ settingsToggleEl.addEventListener("click", () => {
 
 // Storage may be disabled (private mode, blocked cookies, etc.) — mirror the
 // early-paint script's fallback so the rest of the page still wires up.
-let savedTheme = "dark";
-try { savedTheme = localStorage.getItem("theme") || "dark"; } catch (_) {}
+let savedTheme = "brutalist";
+try { savedTheme = localStorage.getItem("theme") || "brutalist"; } catch (_) {}
 themeSel.value = savedTheme;
 themeSel.addEventListener("change", () => applyTheme(themeSel.value));
 
