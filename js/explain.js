@@ -547,9 +547,13 @@ function holdemDraws(user, board) {
   const sc = suitCounts(all);
   for (let s = 0; s < 4; s++) {
     if (sc[s] === 4) {
-      const userInSuit = user.filter(c => c.suit === s).length;
-      if (userInSuit > 0) {
-        parts.push("You're on a flush draw — nine cards complete it.");
+      const userInSuit = user.filter(c => c.suit === s);
+      if (userInSuit.length > 0) {
+        if (userInSuit.some(c => c.rank === 14)) {
+          parts.push("You're drawing to the nut flush — nine cards complete it.");
+        } else {
+          parts.push("You're on a flush draw — nine cards complete it, but a higher flush is possible for anyone holding bigger cards in the suit.");
+        }
       }
       break;
     }
