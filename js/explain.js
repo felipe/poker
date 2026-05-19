@@ -521,7 +521,7 @@ function holdemMadeHand(user, board) {
     for (let r = 14; r >= 2; r--) if (allRC[r] === 3) { tr = r; break; }
     if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. Well hidden, very strong.`;
     if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — you have the trips, but so does everyone else. It comes down to kickers, and anyone with a pocket pair has a full house.`;
-    return `Trips, ${rankPlural(tr)} — strong, but the case ${rankName(tr)} in someone's hand makes quads.`;
+    return `Trips, ${rankPlural(tr)} — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.`;
   }
 
   if (category === 4) return "A straight — strong, though a flush can still beat you and a paired board threatens a full house.";
@@ -547,9 +547,13 @@ function holdemDraws(user, board) {
   const sc = suitCounts(all);
   for (let s = 0; s < 4; s++) {
     if (sc[s] === 4) {
-      const userInSuit = user.filter(c => c.suit === s).length;
-      if (userInSuit > 0) {
-        parts.push("You're on a flush draw — nine cards complete it.");
+      const userInSuit = user.filter(c => c.suit === s);
+      if (userInSuit.length > 0) {
+        if (userInSuit.some(c => c.rank === 14)) {
+          parts.push("You're drawing to the nut flush — nine cards complete it.");
+        } else {
+          parts.push("You're on a flush draw — nine cards complete it, but a higher flush is possible for anyone holding bigger cards in the suit.");
+        }
       }
       break;
     }

@@ -124,7 +124,7 @@ golden("55 set on dry flop",
 
 golden("trips on paired board",
   { user: ["Ks", "Th"], board: ["Kc", "Kd", "4s"], variant: "holdem" },
-  "Trips, kings — strong, but the case king in someone's hand makes quads.");
+  "Trips, kings — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.");
 
 golden("board trips (player not contributing)",
   { user: ["7c", "8d"], board: ["5s", "5h", "5c"], variant: "holdem" },
@@ -132,7 +132,7 @@ golden("board trips (player not contributing)",
 
 golden("flush draw on 2-flush board",
   { user: ["Jd", "9d"], board: ["6d", "Kd", "2s"], variant: "holdem" },
-  "You haven't paired anything yet — king-high. You're on a flush draw — nine cards complete it.");
+  "You haven't paired anything yet — king-high. You're on a flush draw — nine cards complete it, but a higher flush is possible for anyone holding bigger cards in the suit.");
 
 golden("open-ended straight draw",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d"], variant: "holdem" },
