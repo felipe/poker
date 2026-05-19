@@ -202,6 +202,25 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .feedback { margin-top: 10px; text-align: center; font-weight: 600; }
 
+.explanation { margin-top: 18px; }
+.explanation:empty { display: none; }
+.explanation p {
+  margin: 0 0 12px 0;
+  line-height: 1.55;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.explanation p:last-child { margin-bottom: 0; }
+
+.prompt {
+  color: var(--ink);
+  text-align: center;
+  font-weight: 600;
+  margin: 10px 0 8px;
+  min-height: 1.2em;
+}
+.prompt:empty { display: none; }
+
 .status {
   color: var(--muted);
   margin-top: 12px;
@@ -211,6 +230,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .status .math-note { color: var(--ink); margin-bottom: 4px; }
 .status .verdict { font-size: 0.9rem; letter-spacing: 0.04em; font-weight: 700; }
+.status .reason {
+  color: var(--ink);
+  margin: 6px auto 8px;
+  max-width: 42em;
+  line-height: 1.45;
+}
 
 /* ---------- Breakdown bars ---------- */
 .breakdown { margin-top: 14px; }

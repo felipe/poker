@@ -43,6 +43,27 @@ export function renderCardsInto(target, cards, placeholderCount) {
   }
 }
 
+import { explainTrajectory } from "./explain.js";
+
+/**
+ * Plain-prose read of the whole hand's evolution — one paragraph per street,
+ * calling out where the hand grew, bricked, or got watered down, and what
+ * threats appeared along the way. Built from the cards alone; the percentage
+ * panel above already shows the odds.
+ *
+ * @param {HTMLElement} target
+ * @param {Object} params
+ * @param {Array<{label: string, user: Card[], board: Card[]}>} params.streetHistory
+ * @param {number} params.numPlayers
+ * @param {string} params.variant
+ */
+export function renderExplanation(target, params) {
+  const paragraphs = explainTrajectory(params);
+  const escape = /** @param {string} s */ s => s
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  target.innerHTML = paragraphs.map(p => `<p>${escape(p)}</p>`).join("");
+}
+
 /**
  * Render the "Hands you'll likely make" / "Your hand" bar chart.
  *
