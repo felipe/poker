@@ -15,7 +15,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
-import { streetSummary, explainTrajectory } from "../js/explain.js";
+import { explain, streetSummary, explainTrajectory } from "../js/explain.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -231,7 +231,7 @@ const STRUCTURAL_FIXTURES = [
   { name: "board trips fives",   user: ["7c", "8d"], board: ["5s", "5h", "5c"],             variant: "holdem" },
   { name: "flush draw",          user: ["Jd", "9d"], board: ["6d", "Kd", "2s"],             variant: "holdem" },
   { name: "OESD 89-on-7T",       user: ["9h", "Th"], board: ["7c", "8s", "2d"],             variant: "holdem" },
-  { name: "gutshot",             user: ["7h", "Tc"], board: ["8s", "Kc", "2d"],             variant: "holdem" },
+  { name: "gutshot",             user: ["7h", "Tc"], board: ["8d", "6s", "2c"],             variant: "holdem" },
   { name: "3-flush board",       user: ["As", "Kh"], board: ["2d", "8d", "Jd"],             variant: "holdem" },
   { name: "paired board",        user: ["Ah", "Qs"], board: ["Kd", "Kc", "4s"],             variant: "holdem" },
   { name: "made flush river",    user: ["9d", "Jd"], board: ["2d", "5d", "7d", "Ks", "3c"], variant: "holdem" },
@@ -416,9 +416,21 @@ test("cross-check: a set on the flop has >55% heads-up equity", () => {
     `set of fives heads-up equity ${winRate.toFixed(3)} too low for "very strong"`);
 });
 
-test("cross-check: heads-up note ⟹ heads-up player count actually shifts equity in favor of marginal hands", () => {
-  // The prose says "heads-up, weaker hands gain value". Verify that A4o picks
-  // up ≥15pp of equity going from a 6-player table to heads-up.
+test("cross-check: heads-up note is actually emitted, and the math backs it up", () => {
+  // First half: at numPlayers=2 the explainer should emit the heads-up note.
+  // (streetSummary skips the player-count line — the note lives in explain()
+  // and explainTrajectory().)
+  const prose = explain({
+    userCards: hand("As", "4d"),
+    boardCards: [],
+    numPlayers: 2,
+    variant: "holdem",
+  });
+  assert.match(prose, /Heads-up, weaker hands gain value/,
+    `explain() at numPlayers=2 didn't emit the heads-up note: ${prose}`);
+
+  // Second half: the math the note implies — going from 6-handed to heads-up
+  // should pick A4o up by at least 15pp of equity.
   const cards = hand("As", "4d");
   const headsUp = simulate(cards, [], 1, "holdem", SIM_ITERATIONS).winRate;
   const sixHanded = simulate(cards, [], 5, "holdem", SIM_ITERATIONS).winRate;
