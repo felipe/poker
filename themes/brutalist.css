@@ -468,9 +468,10 @@
     border: 1px solid var(--rule);
   }
   .settings-panel label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 14px;
     margin: 0;
     color: var(--ink);
     font-size: 0.65rem;
