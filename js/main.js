@@ -215,9 +215,11 @@ async function handleCall(userChoice) {
 
   advanceStreet();
   renderHand();
+  const pct = (winRate * 100).toFixed(0);
   statusEl.innerHTML =
     `<div class="math-note">${playedStreet.label}: math said ` +
-    `<span class="verdict ${verdict.cls}">${verdict.text}</span></div>` +
+    `<span class="verdict ${verdict.cls}">${verdict.text}</span>` +
+    ` (${pct}% win chance)</div>` +
     `<div>${currentStreet().label} — play or fold?</div>`;
   variantSel.disabled = false;
   playersSel.disabled = false;
