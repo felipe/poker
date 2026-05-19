@@ -4,7 +4,8 @@
 import { makeDeck, shuffle } from "./evaluator.js";
 import { VARIANTS, maxPlayersForVariant, TOSSUP_BAND } from "./variants.js";
 import { simulate } from "./simulate.js";
-import { renderCardsInto, renderBreakdown, renderTrajectory } from "./ui.js";
+import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation } from "./ui.js";
+import { streetSummary } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -19,6 +20,7 @@ const variantSel = /** @type {HTMLSelectElement} */ (document.getElementById("va
 const playersSel = /** @type {HTMLSelectElement} */ (document.getElementById("players"));
 const revealOnFoldEl = /** @type {HTMLInputElement} */ (document.getElementById("revealOnFold"));
 const statusEl = /** @type {HTMLElement} */ (document.getElementById("status"));
+const promptEl = /** @type {HTMLElement} */ (document.getElementById("prompt"));
 const resultEl = /** @type {HTMLElement} */ (document.getElementById("result"));
 const winPctEl = /** @type {HTMLElement} */ (document.getElementById("winPct"));
 const thresholdEl = /** @type {HTMLElement} */ (document.getElementById("threshold"));
@@ -26,6 +28,7 @@ const thresholdLabelEl = /** @type {HTMLElement} */ (document.getElementById("th
 const verdictEl = /** @type {HTMLElement} */ (document.getElementById("verdict"));
 const feedbackEl = /** @type {HTMLElement} */ (document.getElementById("feedback"));
 const breakdownEl = /** @type {HTMLElement} */ (document.getElementById("breakdown"));
+const explanationEl = /** @type {HTMLElement} */ (document.getElementById("explanation"));
 const trajectoryEl = /** @type {HTMLElement} */ (document.getElementById("trajectory"));
 const gameNameEl = /** @type {HTMLElement} */ (document.getElementById("gameName"));
 const gameMetaEl = /** @type {HTMLElement} */ (document.getElementById("gameMeta"));
@@ -94,9 +97,11 @@ function reset() {
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
   statusEl.textContent = "";
+  promptEl.textContent = "";
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
+  explanationEl.innerHTML = "";
   trajectoryEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
@@ -153,6 +158,7 @@ function deal() {
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
+  explanationEl.innerHTML = "";
   trajectoryEl.innerHTML = "";
   dealBtn.disabled = true;
   dealBtn.textContent = "Deal";
@@ -160,13 +166,14 @@ function deal() {
 }
 
 function promptDecision() {
-  statusEl.textContent = `${currentStreet().label} — play or fold?`;
+  promptEl.textContent = `${currentStreet().label} — play or fold?`;
   callActions.style.display = "flex";
 }
 
 /** @param {"play" | "fold"} userChoice */
 async function handleCall(userChoice) {
   callActions.style.display = "none";
+  promptEl.textContent = "";
 
   if (userChoice === "fold") {
     const foldText = currentStreet().foldText;
@@ -216,11 +223,15 @@ async function handleCall(userChoice) {
   advanceStreet();
   renderHand();
   const pct = (winRate * 100).toFixed(0);
+  const reason = streetSummary({ userCards: userSnap, boardCards: boardSnap, variant: variantKey });
+  const escapeHtml = /** @param {string} s */ s => s
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   statusEl.innerHTML =
     `<div class="math-note">${playedStreet.label}: math said ` +
     `<span class="verdict ${verdict.cls}">${verdict.text}</span>` +
     ` (${pct}% win chance)</div>` +
-    `<div>${currentStreet().label} — play or fold?</div>`;
+    `<div class="reason">${escapeHtml(reason)}</div>`;
+  promptEl.textContent = `${currentStreet().label} — play or fold?`;
   variantSel.disabled = false;
   playersSel.disabled = false;
   callActions.style.display = "flex";
@@ -236,6 +247,7 @@ function endHand(summary) {
   variantSel.disabled = false;
   playersSel.disabled = false;
   statusEl.textContent = "Click Deal again for another hand.";
+  promptEl.textContent = "";
   feedbackEl.textContent = summary;
   feedbackEl.className = "feedback";
 }
@@ -286,6 +298,7 @@ async function runSimulationAndRender() {
   verdictEl.textContent = verdictText;
   verdictEl.className = "result-val verdict " + verdictClass;
   renderBreakdown(breakdownEl, final.distribution, variant, final.user, final.board);
+  renderExplanation(explanationEl, { streetHistory: history, numPlayers, variant });
   renderTrajectory(trajectoryEl, trajectory, threshold);
   resultEl.classList.remove("hidden");
   resultsVisible = true;

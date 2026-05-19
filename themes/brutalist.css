@@ -350,6 +350,21 @@
   .feedback:empty { display: none; }
   .feedback::before { content: "$ "; color: var(--accent); font-weight: 800; }
 
+  .explanation {
+    margin: 0;
+    padding: 14px 16px 12px;
+    border-top: 1px solid var(--hairline);
+  }
+  .explanation:empty { display: none; }
+  .explanation p {
+    margin: 0 0 10px 0;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .explanation p:last-child { margin-bottom: 0; }
+
   .status {
     color: var(--ink);
     margin-top: 14px;
@@ -364,7 +379,18 @@
     background: rgba(10,10,10,0.04);
   }
   .status:empty { display: none; }
-  .status::before { content: "$ "; color: var(--accent); }
+  .status::before { content: "> "; color: var(--accent); }
+
+  .prompt {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 14px 0 10px;
+  }
+  .prompt:empty { display: none; }
   .status .math-note,
   .status .verdict {
     display: inline;
