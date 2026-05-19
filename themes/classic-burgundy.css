@@ -540,7 +540,7 @@
     font-style: italic;
   }
 
-  .settings {
+  .settings-panel {
     display: flex;
     flex-wrap: wrap;
     gap: 12px 20px;
@@ -548,7 +548,7 @@
     position: relative;
     z-index: 1;
   }
-  .settings label {
+  .settings-panel label {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -562,7 +562,7 @@
     font-style: italic;
     font-weight: 500;
   }
-  .settings input[type="checkbox"] {
+  .settings-panel input[type="checkbox"] {
     accent-color: var(--gold);
     width: 16px;
     height: 16px;

@@ -409,7 +409,7 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
   </div>
 
   <div class="settings-section">
-    <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false">Settings</button>
+    <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
     <div id="settingsPanel" class="settings-panel hidden">
       <label>
         <span>Variant</span>
@@ -1113,7 +1113,11 @@ function applyTheme(slug) {
   try { localStorage.setItem("theme", slug); } catch (_) {}
 }
 
-themeSel.value = localStorage.getItem("theme") || "dark";
+// Storage may be disabled (private mode, blocked cookies, etc.) — mirror the
+// early-paint script's fallback so the rest of the page still wires up.
+let savedTheme = "dark";
+try { savedTheme = localStorage.getItem("theme") || "dark"; } catch (_) {}
+themeSel.value = savedTheme;
 themeSel.addEventListener("change", () => applyTheme(themeSel.value));
 
 reset();
