@@ -75,6 +75,12 @@ themes/                on-demand stylesheets for designer themes
   brutalist.css          swiss/data-sheet monospace on paper (default)
   brutalist-dark.css     companion dark variant
   editorial.css          serif magazine spread
+test/                  unit tests, run via `node --test`
+  _cards.js              shared card-string parser used by the suites
+  evaluator.test.js      hand evaluator + deck/shuffle
+  variants.test.js       VARIANTS shape, player cap, row layout
+  simulate.test.js       Monte Carlo sanity bounds
+.nvmrc                 pinned Node version for the test runner (22)
 README.md
 .gitignore
 ```
