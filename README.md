@@ -75,6 +75,12 @@ themes/                on-demand stylesheets for designer themes
   brutalist.css          swiss/data-sheet monospace on paper (default)
   brutalist-dark.css     companion dark variant
   editorial.css          serif magazine spread
+test/                  unit tests, run via `node --test`
+  _cards.js              shared card-string parser used by the suites
+  evaluator.test.js      hand evaluator + deck/shuffle
+  variants.test.js       VARIANTS shape, player cap, row layout
+  simulate.test.js       Monte Carlo sanity bounds
+.nvmrc                 pinned Node version for the test runner (22)
 README.md
 .gitignore
 ```
@@ -136,9 +142,26 @@ Add an entry to the `VARIANTS` object in `js/variants.js`. Each entry declares t
 
 The simulator and evaluator pick it up automatically. The Players cap is derived from the deck size.
 
+## Tests
+
+Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simulate.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
+
+```sh
+node --test test/*.test.js
+```
+
+Requires **Node 22+** (pinned in `.nvmrc`). The runner has been stable since Node 20; 22 is the current Active LTS.
+
+Coverage:
+- `test/evaluator.test.js` — every hand category, the wheel straight, kicker tie-breaks, and a few 7-card best-of-five scenarios.
+- `test/variants.test.js` — VARIANTS shape, `maxPlayersForVariant` deck math, `rowLayout` for each card count.
+- `test/simulate.test.js` — statistical sanity bounds on the Monte Carlo simulator (pocket aces beat 7-2, equity drops with more opponents, made flush ≈ 90% on the river, etc.). Uses 5,000 iterations and ±5 percentage-point thresholds to stay flake-free.
+
+The UI / DOM layer (`ui.js`, `main.js`) is not unit-tested — that path is covered by manual verification below.
+
 ## Contributing
 
-There's no test framework. Verify changes manually in the browser:
+For UI changes, verify manually in the browser:
 
 - Deal a hand in each variant and run it through to showdown.
 - Fold on different streets in Hold'em / Stud and confirm the runout reveal works.
