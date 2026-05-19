@@ -3,6 +3,7 @@
 
 import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js";
 import { VARIANTS, rowLayout } from "./variants.js";
+import { explainTrajectory } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -42,8 +43,6 @@ export function renderCardsInto(target, cards, placeholderCount) {
     target.appendChild(row);
   }
 }
-
-import { explainTrajectory } from "./explain.js";
 
 /**
  * Plain-prose read of the whole hand's evolution — one paragraph per street,

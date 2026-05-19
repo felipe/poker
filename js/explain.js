@@ -283,8 +283,11 @@ function holdemMadeHand(user, board) {
   const allRC = rankCounts(all);
 
   if (category === 0) {
-    const high = user.reduce((a, b) => (a.rank > b.rank ? a : b));
-    return `You haven't paired anything yet — your best card is the ${rankName(high.rank)}.`;
+    // "Best card" used to read off the user's hole only — misleading when the
+    // board has a higher card (everyone shares it at showdown). Use combined
+    // high and standard "ace-high" / "king-high" phrasing.
+    const high = all.reduce((a, b) => (a.rank > b.rank ? a : b));
+    return `You haven't paired anything yet — ${rankName(high.rank)}-high.`;
   }
 
   if (category === 1) {
@@ -300,8 +303,19 @@ function holdemMadeHand(user, board) {
     }
     const boardSorted = board.map(c => c.rank).sort((a, b) => b - a);
     const idx = boardSorted.indexOf(pr);
-    const kicker = user.find(c => c.rank !== pr);
-    const kickerStr = kicker ? `, ${rankName(kicker.rank)} kicker` : "";
+    // The "kicker" the user actually gets to play in their best-5 is the
+    // highest non-pair card across hand + board. Call it a "kicker" only if
+    // the user's hole-card kicker leads (i.e., beats every non-pair board
+    // card). Otherwise just describe what they hold in the hole, since the
+    // board's higher kicker is shared by everyone and isn't a true edge.
+    const holeKicker = user.find(c => c.rank !== pr);
+    const boardKickerMax = Math.max(0, ...board.filter(c => c.rank !== pr).map(c => c.rank));
+    let kickerStr = "";
+    if (holeKicker) {
+      kickerStr = holeKicker.rank > boardKickerMax
+        ? `, ${rankName(holeKicker.rank)} kicker`
+        : `, with the ${rankName(holeKicker.rank)} in the hole`;
+    }
     if (idx === 0) return `Top pair, ${rankPlural(pr)}${kickerStr} — a solid one-pair hand.`;
     if (idx === boardSorted.length - 1) return `Bottom pair, ${rankPlural(pr)}${kickerStr} — weak, easily outkicked or outdrawn.`;
     return `Middle pair, ${rankPlural(pr)}${kickerStr} — okay, but two board cards beat it.`;
@@ -411,14 +425,26 @@ function holdemBoardThreats(user, board) {
   const moreToCome = board.length < 5;
 
   if (category < 5) {
-    let threeSuit = -1;
-    for (let s = 0; s < 4; s++) if (bSC[s] >= 3) { threeSuit = s; break; }
-    if (threeSuit >= 0) {
-      const userInSuit = user.filter(c => c.suit === threeSuit).length;
+    // Find the deepest single-suit board concentration. With 3 on board,
+    // an opponent needs 2 of that suit in hand for a flush; with 4, just 1
+    // (or even a pocket pair where one matches); with 5 on board, everyone
+    // plays the board's flush — but in that case we'd already have a flush
+    // ourselves and category would be >= 5, so we wouldn't be here.
+    let flushSuit = -1;
+    let flushCount = 0;
+    for (let s = 0; s < 4; s++) if (bSC[s] >= 3 && bSC[s] > flushCount) { flushSuit = s; flushCount = bSC[s]; }
+    if (flushSuit >= 0) {
+      const userInSuit = user.filter(c => c.suit === flushSuit).length;
       if (userInSuit === 0) {
-        parts.push("The board already has three of one suit — anyone holding two of that suit has made a flush.");
+        if (flushCount === 3) {
+          parts.push("The board already has three of one suit — anyone holding two of that suit has made a flush.");
+        } else {
+          // 4 on board.
+          parts.push("The board has four of one suit — anyone holding even a single card of that suit has made a flush.");
+        }
       }
-      // userInSuit >= 1 means it's our flush draw, already named.
+      // userInSuit >= 1 means it's our flush draw (or our flush, in which
+      // case category >= 5 and we wouldn't be here), already named.
     } else if (moreToCome) {
       // Two-of-a-suit only matters when there's a card to come.
       let twoSuit = -1;

@@ -217,7 +217,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   text-align: center;
   font-weight: 600;
   margin: 10px 0 8px;
-  min-height: 1.2em;
 }
 .prompt:empty { display: none; }
 
