@@ -85,12 +85,12 @@ type errors and autocomplete from the JSDoc shapes without any build step.
 
 ## Themes
 
-Theme selection lives in the **Settings** panel at the bottom of the main block. The choice persists in `localStorage` and is applied before the first paint to avoid a flash.
+Theme selection lives in the **Settings** panel at the bottom of the main block. The choice persists in `localStorage` and is applied before the first paint to avoid a flash. **Brutalist** is the default — that's what a first-time visitor with no saved preference lands on.
 
 Two kinds of themes:
 
-- **Built-in** (Dark / Felt / Light) — CSS-variable swaps on `[data-theme="X"]` inside the inline `<style>` block. Fast to switch; no extra fetch.
-- **Designer** (Vegas Neon / Classic Casino / Brutalist / Editorial) — full stylesheets at `themes/<slug>.css`. Loaded via a `<link>` element when the theme is active; removed when you switch back. Each one restyles the whole page including `.game-header` so it feels native to its aesthetic.
+- **Built-in** (Dark / Felt / Light) — CSS-variable swaps on `[data-theme="X"]` defined in `css/themes.css`. Fast to switch; no extra fetch.
+- **Designer** (Vegas Neon / Classic Casino / Classic Burgundy / Brutalist / Brutalist Dark / Editorial) — full stylesheets at `themes/<slug>.css`. Loaded via a `<link>` element when the theme is active; removed when you switch back. Each one restyles the whole page including `.game-header` so it feels native to its aesthetic.
 
 ### Adding a built-in theme
 
