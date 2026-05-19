@@ -15,7 +15,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
-import { explain, streetSummary, explainTrajectory } from "../js/explain.js";
+import { explain, streetSummary, explainTrajectory, recapHand } from "../js/explain.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -449,6 +449,93 @@ test("cross-check: 'flush draw' has ~35% equity to complete by the river (heads-
   // completion (the existing J-high also wins some rivers vs. random hands).
   assert.ok(winRate > 0.35 && winRate < 0.65,
     `flush-draw equity ${winRate.toFixed(3)} outside expected band 35-65%`);
+});
+
+/* ============================================================
+ * (4) RECAP — whole-hand synthesis.
+ * ============================================================ */
+
+test("recap: pocket jacks → trip-9s board → river ace produces the canonical 'made-but-fell' message", () => {
+  // The exact scenario the recap layer was added for: full house on paper,
+  // equity drops on the river because anyone holding an ace has a bigger boat.
+  const user = hand("Jh", "Jd");
+  const trajectory = [
+    { label: "Pre-flop", user, board: [],                                            winRate: 0.38 },
+    { label: "Flop",     user, board: hand("9c", "9s", "Ts"),                        winRate: 0.27 },
+    { label: "Turn",     user, board: hand("9c", "9s", "Ts", "9d"),                  winRate: 0.55 },
+    { label: "River",    user, board: hand("9c", "9s", "Ts", "9d", "Ah"),            winRate: 0.31 },
+  ];
+  const recap = recapHand({ trajectory, variant: "holdem" });
+  assert.ok(recap, "recap returned null for a multi-street Hold'em hand");
+  assert.match(recap, /nines full of jacks/);
+  assert.match(recap, /equity fell from 38% to 31%/);
+  assert.match(recap, /biggest drop was on the river/);
+  // Article-correctness: must be "an ace", not "a ace".
+  assert.match(recap, /anyone holding an ace/);
+  assert.doesNotMatch(recap, /anyone holding a ace/);
+});
+
+test("recap: rising equity case ends with 'climbed' framing", () => {
+  // Set on the flop, hand keeps improving on a dry runout — equity rises.
+  const user = hand("5s", "5h");
+  const trajectory = [
+    { label: "Pre-flop", user, board: [],                                            winRate: 0.32 },
+    { label: "Flop",     user, board: hand("5c", "9h", "Qs"),                        winRate: 0.78 },
+    { label: "Turn",     user, board: hand("5c", "9h", "Qs", "2d"),                  winRate: 0.82 },
+    { label: "River",    user, board: hand("5c", "9h", "Qs", "2d", "7c"),            winRate: 0.85 },
+  ];
+  const recap = recapHand({ trajectory, variant: "holdem" });
+  assert.ok(recap);
+  assert.match(recap, /three fives/);
+  assert.match(recap, /climbed from 32% to 85%/);
+});
+
+test("recap: roughly-flat equity case uses 'steady' framing", () => {
+  const user = hand("As", "Kh");
+  const trajectory = [
+    { label: "Pre-flop", user, board: [],                                            winRate: 0.40 },
+    { label: "Flop",     user, board: hand("7c", "4d", "2s"),                        winRate: 0.41 },
+    { label: "Turn",     user, board: hand("7c", "4d", "2s", "8h"),                  winRate: 0.40 },
+    { label: "River",    user, board: hand("7c", "4d", "2s", "8h", "3c"),            winRate: 0.39 },
+  ];
+  const recap = recapHand({ trajectory, variant: "holdem" });
+  assert.ok(recap);
+  assert.match(recap, /roughly steady/);
+});
+
+test("recap: returns null when there's no trajectory to synthesize", () => {
+  // Single-street fold or no trajectory at all — the per-street narrative
+  // already says what happened, recap would be redundant.
+  assert.equal(recapHand({ trajectory: [], variant: "holdem" }), null);
+  assert.equal(recapHand({
+    trajectory: [{ label: "Pre-flop", user: hand("As", "Kh"), board: [], winRate: 0.5 }],
+    variant: "holdem",
+  }), null);
+});
+
+test("recap: returns null for non-Hold'em variants (no community arc)", () => {
+  const trajectory = [
+    { label: "Hand", user: hand("As", "Ah", "Kd", "5c", "2s"), board: [], winRate: 0.6 },
+  ];
+  assert.equal(recapHand({ trajectory, variant: "fivecard" }), null);
+});
+
+test("recap: returns null when any trajectory point is missing a finite winRate", () => {
+  // The contract requires winRate, but if a caller passes a malformed
+  // trajectory (untyped JS, test harness, partial sim run) the recap should
+  // skip rather than print "NaN%" at the user.
+  const user = hand("As", "Ah");
+  const baseTraj = [
+    { label: "Pre-flop", user, board: [],                     winRate: 0.5 },
+    { label: "Flop",     user, board: hand("7c", "4d", "2s"), winRate: 0.6 },
+  ];
+  for (const bad of [undefined, null, NaN, Infinity, "0.5", {}]) {
+    const traj = baseTraj.map((p, i) => i === 1 ? { ...p, winRate: /** @type {any} */ (bad) } : p);
+    assert.equal(
+      recapHand({ trajectory: traj, variant: "holdem" }), null,
+      `recap should be null when winRate is ${String(bad)}`,
+    );
+  }
 });
 
 /* ============================================================

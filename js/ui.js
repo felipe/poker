@@ -3,7 +3,7 @@
 
 import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js";
 import { VARIANTS, rowLayout } from "./variants.js";
-import { explainTrajectory } from "./explain.js";
+import { explainTrajectory, recapHand } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -45,22 +45,31 @@ export function renderCardsInto(target, cards, placeholderCount) {
 }
 
 /**
- * Plain-prose read of the whole hand's evolution — one paragraph per street,
- * calling out where the hand grew, bricked, or got watered down, and what
- * threats appeared along the way. Built from the cards alone; the percentage
- * panel above already shows the odds.
+ * Plain-prose read of the whole hand. Renders:
+ *   1. A recap paragraph (if there's enough trajectory to synthesize) — names
+ *      the final hand and explains the biggest equity swing.
+ *   2. One paragraph per street, calling out where the hand grew, bricked, or
+ *      got watered down and what threats appeared along the way.
+ *
+ * The recap reads the equity arc, so it needs trajectory points that include
+ * the per-street winRate (not just the cards).
  *
  * @param {HTMLElement} target
  * @param {Object} params
- * @param {Array<{label: string, user: Card[], board: Card[]}>} params.streetHistory
+ * @param {Array<{label: string, user: Card[], board: Card[], winRate: number}>} params.trajectory
  * @param {number} params.numPlayers
  * @param {string} params.variant
  */
 export function renderExplanation(target, params) {
-  const paragraphs = explainTrajectory(params);
   const escape = /** @param {string} s */ s => s
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  target.innerHTML = paragraphs.map(p => `<p>${escape(p)}</p>`).join("");
+
+  /** @type {string[]} */
+  const blocks = [];
+  const recap = recapHand(params);
+  if (recap) blocks.push(`<p class="recap">${escape(recap)}</p>`);
+  for (const p of explainTrajectory(params)) blocks.push(`<p>${escape(p)}</p>`);
+  target.innerHTML = blocks.join("");
 }
 
 /**

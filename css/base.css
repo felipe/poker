@@ -211,6 +211,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   font-size: 0.95rem;
 }
 .explanation p:last-child { margin-bottom: 0; }
+/* Recap leads the section as the TL;DR; mark it slightly heavier and give it
+   a hairline divider so the per-street narrative below reads as the detail. */
+.explanation p.recap {
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
 
 .prompt {
   color: var(--ink);
@@ -295,20 +303,52 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  text-align: center;
 }
-.settings-toggle {
+.settings-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Override the global `select, button { width: 100% }` and
+     `background: var(--input-bg)` defaults so these read as bare icons. */
+  width: auto;
   background: none;
   border: none;
+  padding: 6px;
   color: var(--muted);
-  font-size: 0.85rem;
   cursor: pointer;
-  padding: 4px 8px;
-  width: auto;
-  letter-spacing: 0.04em;
+  text-decoration: none;
+  line-height: 0;
+  border-radius: 6px;
 }
-.settings-toggle:hover { color: var(--ink); }
-.settings-toggle::before { content: "⚙ "; }
+.icon-btn:hover { color: var(--ink); }
+/* Keyboard focus needs a visible indicator. Use the theme's accent for the
+   ring so it stays legible across light/dark/burgundy/etc. */
+.icon-btn:focus-visible {
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.icon-btn svg { display: block; }
+
+.suit-emblem {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+  user-select: none;
+  letter-spacing: 0;
+}
+/* `--card-black` / `--card-red` are tuned for the white card face; on the
+   page background a near-black would be invisible in dark themes. Use the
+   theme's foreground (ink) for the black suits and only borrow the red. */
+.suit-emblem .s-r { color: var(--card-red); }
+.suit-emblem .s-b { color: var(--ink); }
 
 .settings-panel {
   margin-top: 12px;
