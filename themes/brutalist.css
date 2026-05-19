@@ -478,7 +478,10 @@
     letter-spacing: 0.18em;
     cursor: pointer;
   }
-  .settings-panel label::before { content: ""; }
+  /* Suppress the "› " marker the general label rule prepends — inside
+     a display:flex; justify-content:space-between label it becomes a
+     third flex item that pushes the span text into the middle. */
+  .settings-panel label::before { display: none; }
   .settings-panel input[type="checkbox"] {
     accent-color: var(--accent);
     width: 14px;
