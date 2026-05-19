@@ -479,13 +479,9 @@
     cursor: pointer;
   }
   .settings-panel label::before { content: ""; }
-  /* Base sets .settings-panel select { padding: 4px 8px } which overrides
-     the theme's select padding-right: 28px, so the css-drawn dropdown arrow
-     ends up sitting on top of the option text. Re-add the right padding
-     and a touch of inline padding so values like "TEXAS HOLD'EM" and a
-     single-digit "5" both have room to breathe next to the arrow. */
+  /* Boxed-spec look for the inset settings select — base.css reserves
+     the 28px right padding the css-drawn arrow needs. */
   .settings-panel select {
-    padding: 4px 28px 4px 10px;
     background-color: var(--paper);
     border: 1px solid var(--rule);
   }
