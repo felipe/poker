@@ -4,24 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poker Hand Advisor</title>
-<script>
-  // Apply saved theme before first paint to avoid a flash. Built-in themes
-  // (dark/felt/light) just set data-theme; custom designs are stylesheets
-  // loaded from themes/<slug>.css.
-  (function () {
-    var CUSTOM = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
-    try {
-      var t = localStorage.getItem("theme") || "dark";
-      if (CUSTOM.indexOf(t) >= 0) {
-        var l = document.createElement("link");
-        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css";
-        document.head.appendChild(l);
-      } else {
-        document.documentElement.dataset.theme = t;
-      }
-    } catch (_) { document.documentElement.dataset.theme = "dark"; }
-  })();
-</script>
 <style>
   :root,
   [data-theme="dark"] {
@@ -364,6 +346,26 @@
     font-size: 0.9rem;
   }
 </style>
+<script>
+  // Apply saved theme before first paint to avoid a flash. Built-in themes
+  // (dark/felt/light) just set data-theme; custom designs are stylesheets
+  // loaded from themes/<slug>.css. This script must come AFTER the inline
+  // <style> so the appended <link> sits later in the cascade and its rules
+  // win over the inline base.
+  (function () {
+    var CUSTOM = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
+    try {
+      var t = localStorage.getItem("theme") || "dark";
+      if (CUSTOM.indexOf(t) >= 0) {
+        var l = document.createElement("link");
+        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css";
+        document.head.appendChild(l);
+      } else {
+        document.documentElement.dataset.theme = t;
+      }
+    } catch (_) { document.documentElement.dataset.theme = "dark"; }
+  })();
+</script>
 </head>
 <body>
 
