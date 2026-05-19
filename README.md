@@ -53,7 +53,7 @@ Equity > 1 ÷ playercount is the "play" line — you're getting more than your s
 
 ### Mid-hand verdict
 
-On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick sim runs at the current state and the status line reports `<street>: math said PLAY / FOLD / TOSS-UP` so you can tell whether you went with or against the math without seeing the actual numbers. The full percentages stay reserved for the post-decision result panel.
+On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick sim runs at the current state and the status line reports `<street>: math said PLAY / FOLD / TOSS-UP (XX% win chance)` so you can tell whether you went with or against the math, and by how much, before the next street is dealt. The full result panel (with the equity-by-street chart and hand-category breakdown) still waits until the hand actually resolves.
 
 ## Project layout
 
