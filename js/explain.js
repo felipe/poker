@@ -521,7 +521,7 @@ function holdemMadeHand(user, board) {
     for (let r = 14; r >= 2; r--) if (allRC[r] === 3) { tr = r; break; }
     if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. Well hidden, very strong.`;
     if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — you have the trips, but so does everyone else. It comes down to kickers, and anyone with a pocket pair has a full house.`;
-    return `Trips, ${rankPlural(tr)} — strong, but the case ${rankName(tr)} in someone's hand makes quads.`;
+    return `Trips, ${rankPlural(tr)} — strong, but the paired board already gives a full house to anyone holding a matching pocket pair.`;
   }
 
   if (category === 4) return "A straight — strong, though a flush can still beat you and a paired board threatens a full house.";
