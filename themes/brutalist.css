@@ -479,12 +479,6 @@
     cursor: pointer;
   }
   .settings-panel label::before { content: ""; }
-  /* Boxed-spec look for the inset settings select — base.css reserves
-     the 28px right padding the css-drawn arrow needs. */
-  .settings-panel select {
-    background-color: var(--paper);
-    border: 1px solid var(--rule);
-  }
   .settings-panel input[type="checkbox"] {
     accent-color: var(--accent);
     width: 14px;
