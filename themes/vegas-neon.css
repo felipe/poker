@@ -497,10 +497,8 @@
   .chip-violet  { color: var(--neon-violet);  background-color: #2a0a4a; }
 
   .settings-panel label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
+    /* layout (flex / space-between / gap) comes from css/base.css so every
+       theme's settings rows align the same way. */
     color: var(--muted);
     font-family: system-ui, -apple-system, sans-serif;
     font-size: 0.9rem;
