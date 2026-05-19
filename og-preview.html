@@ -6,9 +6,21 @@
   uses the same CSS vocabulary so the social preview stays on-brand.
 
   To regenerate og.png:
-    1. Serve the project (e.g. `python3 -m http.server 8765`)
-    2. Open http://localhost:8765/og-preview.html, screenshot the rendered
-       1200×630 canvas, save as og.png at the repo root.
+    1. Serve the project (e.g. `python3 -m http.server 8765`).
+    2. Make sure you have a network connection — the brutalist theme pulls
+       JetBrains Mono from Google Fonts via @import. The page won't add the
+       `ready` attribute on <html> until `document.fonts.ready` resolves,
+       so a headless screenshot will capture stale typography if it fires
+       before the fonts load.
+    3. Run headless Chrome (waits for the readiness signal):
+         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+           --headless --disable-gpu --hide-scrollbars \
+           --window-size=1200,630 \
+           --virtual-time-budget=4000 \
+           --screenshot=og.png \
+           http://localhost:8765/og-preview.html
+       The --virtual-time-budget gives the fonts time to load before the
+       PNG is captured.
 -->
 <html lang="en">
 <head>
@@ -42,11 +54,11 @@
   /* Hide app chrome we don't want in a static preview. */
   #deal, #callActions, #status, #prompt, .settings-section { display: none !important; }
 
-  /* Left column — identity. */
+  /* Left column — identity. Simple stack: positional, not flex-distributed,
+     so headless and live renders look the same. */
   .lockup {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     color: var(--ink);
   }
   .doc-line {
@@ -74,6 +86,7 @@
     color: var(--ink);
   }
   .suits-emblem {
+    margin-top: 36px;
     font-size: 2rem;
     letter-spacing: 0.12em;
   }
@@ -180,5 +193,15 @@
   </p>
 </div>
 
+<script>
+  // Mark the document ready only after webfonts have loaded so a headless
+  // screenshot (or any scraper that respects this signal) doesn't capture
+  // stale typography. JetBrains Mono is pulled from Google Fonts by the
+  // brutalist theme; without this gate the PNG can render in the fallback
+  // monospace stack before the network round-trip finishes.
+  document.fonts.ready.then(() => {
+    document.documentElement.setAttribute("data-ready", "true");
+  });
+</script>
 </body>
 </html>

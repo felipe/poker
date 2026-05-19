@@ -7,15 +7,18 @@
 <meta name="description" content="Play or fold — and learn why.">
 
 <!-- Social preview (iMessage / Slack / X / LinkedIn / GitHub).
-     iMessage and Slack honor Open Graph; X reads the twitter:* duplicates. -->
+     iMessage and Slack honor Open Graph; X reads the twitter:* duplicates.
+     The image URL is absolute (and points at raw.githubusercontent.com so
+     it's stable wherever the site is deployed) — many scrapers require
+     absolute URLs for og:image and fail silently on relative paths. -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Poker Hand Advisor">
 <meta property="og:description" content="Play or fold — and learn why.">
-<meta property="og:image" content="og.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/felipe/poker/main/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Poker Hand Advisor">
 <meta name="twitter:description" content="Play or fold — and learn why.">
-<meta name="twitter:image" content="og.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/felipe/poker/main/og.png">
 
 <link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/base.css">
