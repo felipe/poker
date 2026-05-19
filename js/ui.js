@@ -56,7 +56,7 @@ export function renderCardsInto(target, cards, placeholderCount) {
  *
  * @param {HTMLElement} target
  * @param {Object} params
- * @param {Array<{label: string, user: Card[], board: Card[], winRate?: number}>} params.trajectory
+ * @param {Array<{label: string, user: Card[], board: Card[], winRate: number}>} params.trajectory
  * @param {number} params.numPlayers
  * @param {string} params.variant
  */

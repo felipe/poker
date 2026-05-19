@@ -520,6 +520,24 @@ test("recap: returns null for non-Hold'em variants (no community arc)", () => {
   assert.equal(recapHand({ trajectory, variant: "fivecard" }), null);
 });
 
+test("recap: returns null when any trajectory point is missing a finite winRate", () => {
+  // The contract requires winRate, but if a caller passes a malformed
+  // trajectory (untyped JS, test harness, partial sim run) the recap should
+  // skip rather than print "NaN%" at the user.
+  const user = hand("As", "Ah");
+  const baseTraj = [
+    { label: "Pre-flop", user, board: [],                     winRate: 0.5 },
+    { label: "Flop",     user, board: hand("7c", "4d", "2s"), winRate: 0.6 },
+  ];
+  for (const bad of [undefined, null, NaN, Infinity, "0.5", {}]) {
+    const traj = baseTraj.map((p, i) => i === 1 ? { ...p, winRate: /** @type {any} */ (bad) } : p);
+    assert.equal(
+      recapHand({ trajectory: traj, variant: "holdem" }), null,
+      `recap should be null when winRate is ${String(bad)}`,
+    );
+  }
+});
+
 /* ============================================================
  * Helpers
  * ============================================================ */

@@ -131,6 +131,9 @@ export function recapHand(ctx) {
   const { trajectory, variant } = ctx;
   if (!trajectory || trajectory.length < 2) return null;
   if (variant !== "holdem") return null;
+  // Defensive: the recap depends on winRate at every snapshot. If a caller
+  // passes trajectory without simulated equities, skip rather than emit NaN%.
+  if (trajectory.some(t => !Number.isFinite(t.winRate))) return null;
 
   const first = trajectory[0];
   const last = trajectory[trajectory.length - 1];
