@@ -195,12 +195,6 @@
   .actions button { flex: 1; }
 
   /* ---------- settings (in-text) ---------- */
-  .settings-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 24px;
-    margin: 0 0 28px;
-  }
   .settings-panel label {
     display: inline-flex;
     align-items: center;
