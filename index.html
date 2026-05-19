@@ -739,12 +739,28 @@ async function handleCall(userChoice) {
 
   // Mid-hand play: sim the current street so the user can see whether they
   // played with or against the math before the next street is dealt.
+  // Snapshot inputs and lock the variant/player selectors BEFORE the await —
+  // otherwise a variant change during the yield triggers reset(), then this
+  // handler resumes and advanceStreet() runs against the new variant
+  // (potentially single-street), corrupting state or crashing.
   const playedStreet = currentStreet();
+  const variantKey = variantSel.value;
+  const userSnap = userRevealed.slice();
+  const boardSnap = boardRevealed.slice();
   const numPlayers = parseInt(playersSel.value, 10);
   const threshold = 1 / numPlayers;
+  variantSel.disabled = true;
+  playersSel.disabled = true;
   statusEl.textContent = "Simulating…";
   await new Promise(r => setTimeout(r, 20));
-  const { winRate } = simulate(userRevealed, boardRevealed, numPlayers - 1, variantSel.value, 10000);
+  // Defense in depth: if anything still managed to reset the hand during the
+  // yield, bail before touching street state.
+  if (!handInProgress) {
+    variantSel.disabled = false;
+    playersSel.disabled = false;
+    return;
+  }
+  const { winRate } = simulate(userSnap, boardSnap, numPlayers - 1, variantKey, 10000);
   const verdict = Math.abs(winRate - threshold) <= TOSSUP_BAND
     ? { text: "TOSS-UP", cls: "tossup" }
     : winRate > threshold
@@ -757,6 +773,8 @@ async function handleCall(userChoice) {
     `<div class="math-note">${playedStreet.label}: math said ` +
     `<span class="verdict ${verdict.cls}">${verdict.text}</span></div>` +
     `<div>${currentStreet().label} — play or fold?</div>`;
+  variantSel.disabled = false;
+  playersSel.disabled = false;
   callActions.style.display = "flex";
 }
 
