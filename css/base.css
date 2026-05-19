@@ -312,6 +312,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .settings-panel select {
   width: auto;
-  padding: 4px 8px;
   font-size: 0.9rem;
+  /* Reserve 28px on the right so designer themes that draw their own
+     dropdown arrow via a background-image at ~calc(100% - 12-16px) have
+     clearance for it. Native-arrow themes (dark/felt/light/vegas) just
+     get a slightly wider select. padding-left is intentionally left to
+     each theme's own select rule so the underlined Editorial look (no
+     left padding) and the inset Brutalist box (10-12px) both work. */
+  padding-top: 4px;
+  padding-right: 28px;
+  padding-bottom: 4px;
 }

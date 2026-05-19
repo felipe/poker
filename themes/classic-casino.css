@@ -541,10 +541,7 @@
   }
 
   .settings-panel label {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
+    /* layout (flex / space-between / gap) comes from css/base.css. */
     color: var(--ivory-soft);
     font-size: 0.95rem;
     cursor: pointer;
