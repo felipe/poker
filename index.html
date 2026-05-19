@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poker Hand Advisor</title>
 <style>
-  :root {
+  :root,
+  [data-theme="dark"] {
     --bg: #0e1a14;
     --panel: #16271e;
     --ink: #e8f0ea;
@@ -16,6 +17,45 @@
     --card-bg: #fafafa;
     --card-black: #1a1a1a;
     --card-red: #c0392b;
+    --border: #2a3f33;
+    --input-bg: #0e1a14;
+    --track: #1f3327;
+    --result-bg: #0e1a14;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  [data-theme="felt"] {
+    --bg: #07392a;
+    --panel: #0a5238;
+    --ink: #f5efe0;
+    --muted: #a8c8b3;
+    --accent: #ffd166;
+    --good: #6ee7a3;
+    --bad: #fca5a5;
+    --card-bg: #fafafa;
+    --card-black: #1a1a1a;
+    --card-red: #c0392b;
+    --border: #1a5a40;
+    --input-bg: #07392a;
+    --track: #134a32;
+    --result-bg: #07392a;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  }
+  [data-theme="light"] {
+    --bg: #f3f4f6;
+    --panel: #ffffff;
+    --ink: #111827;
+    --muted: #6b7280;
+    --accent: #d97706;
+    --good: #15803d;
+    --bad: #dc2626;
+    --card-bg: #ffffff;
+    --card-black: #1a1a1a;
+    --card-red: #c0392b;
+    --border: #d1d5db;
+    --input-bg: #f9fafb;
+    --track: #e5e7eb;
+    --result-bg: #f9fafb;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
   * { box-sizing: border-box; }
   body {
@@ -31,21 +71,63 @@
   }
   h1 { margin: 0 0 4px; font-size: 1.6rem; }
   .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
+  body.in-hand h1, body.in-hand .sub { display: none; }
+  body.in-hand #deal { display: none; }
   .panel {
     background: var(--panel);
     padding: 20px;
     border-radius: 12px;
     width: 100%;
     max-width: 560px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow);
   }
-  .controls {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+  /* Game header — canonical (Dark). Themes override below or in themes/*.css. */
+  .game-header {
+    text-align: center;
     margin-bottom: 16px;
+    padding-bottom: 14px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
   }
-  .control { flex: 1; min-width: 140px; }
+  .game-header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 1px;
+    background: var(--accent);
+  }
+  .game-name {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+  }
+  .game-meta {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Felt — gold pinstripe under the name, gold caps for meta. */
+  [data-theme="felt"] .game-header { border-bottom-color: rgba(255, 209, 102, 0.22); }
+  [data-theme="felt"] .game-header::after {
+    background: linear-gradient(90deg, transparent, var(--accent) 35%, var(--accent) 65%, transparent);
+    width: 96px;
+  }
+  [data-theme="felt"] .game-name { letter-spacing: 0; }
+  [data-theme="felt"] .game-meta { color: var(--accent); opacity: 0.75; }
+
+  /* Light — restrained, slimmer weight, tighter accent rule. */
+  [data-theme="light"] .game-header { border-bottom-color: rgba(0, 0, 0, 0.08); }
+  [data-theme="light"] .game-header::after { width: 20px; }
+  [data-theme="light"] .game-name { font-weight: 600; letter-spacing: -0.02em; }
   label {
     display: block;
     font-size: 0.85rem;
@@ -56,8 +138,8 @@
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid #2a3f33;
-    background: #0e1a14;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
     color: var(--ink);
     font-size: 1rem;
     font-family: inherit;
@@ -120,7 +202,7 @@
   .card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); }
   .card.placeholder {
     background: transparent;
-    border: 2px dashed #2a3f33;
+    border: 2px dashed var(--border);
     box-shadow: none;
   }
 
@@ -128,15 +210,15 @@
     margin-top: 16px;
     padding: 16px;
     border-radius: 8px;
-    background: #0e1a14;
-    border: 1px solid #2a3f33;
+    background: var(--result-bg);
+    border: 1px solid var(--border);
   }
   .result.hidden { display: none; }
   .result-row {
     display: flex;
     justify-content: space-between;
     padding: 6px 0;
-    border-bottom: 1px solid #1f3327;
+    border-bottom: 1px solid var(--track);
   }
   .result-row:last-child { border-bottom: none; }
   .result-label { color: var(--muted); }
@@ -150,6 +232,8 @@
     font-weight: 600;
   }
   .status { color: var(--muted); margin-top: 12px; font-size: 0.9rem; text-align: center; min-height: 1.2em; }
+  .status .math-note { color: var(--ink); margin-bottom: 4px; }
+  .status .verdict { font-size: 0.9rem; letter-spacing: 0.04em; font-weight: 700; }
 
   /* Shrink cards on narrow viewports so the 7-card (4+3) layout fits. */
   @media (max-width: 440px) {
@@ -181,7 +265,7 @@
   .bar-track {
     display: block;
     height: 8px;
-    background: #1f3327;
+    background: var(--track);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -203,7 +287,7 @@
     letter-spacing: 0.05em;
   }
   .trajectory svg { width: 100%; height: auto; display: block; }
-  .trajectory .grid { stroke: #1f3327; stroke-width: 1; }
+  .trajectory .grid { stroke: var(--track); stroke-width: 1; }
   .trajectory .grid-label { fill: var(--muted); font-size: 10px; text-anchor: end; font-variant-numeric: tabular-nums; }
   .trajectory .threshold { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
   .trajectory .threshold-label { fill: var(--muted); font-size: 10px; text-anchor: end; }
@@ -214,28 +298,74 @@
 
   .verdict.tossup { color: var(--accent); }
 
-  .settings {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 18px;
-    margin-bottom: 16px;
+  .settings-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
   }
-  .settings label {
-    display: inline-flex;
+  .settings-toggle {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    width: auto;
+    letter-spacing: 0.04em;
+  }
+  .settings-toggle:hover { color: var(--ink); }
+  .settings-toggle::before { content: "⚙ "; }
+  .settings-panel {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+  }
+  .settings-panel.hidden { display: none; }
+  .settings-panel label {
+    display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     margin: 0;
     color: var(--muted);
     font-size: 0.9rem;
     cursor: pointer;
   }
-  .settings input[type="checkbox"] {
+  .settings-panel input[type="checkbox"] {
     accent-color: var(--accent);
     width: 16px;
     height: 16px;
     cursor: pointer;
   }
+  .settings-panel select {
+    width: auto;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+  }
 </style>
+<script>
+  // Apply saved theme before first paint to avoid a flash. Built-in themes
+  // (dark/felt/light) just set data-theme; custom designs are stylesheets
+  // loaded from themes/<slug>.css. This script must come AFTER the inline
+  // <style> so the appended <link> sits later in the cascade and its rules
+  // win over the inline base.
+  (function () {
+    var CUSTOM = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
+    try {
+      var t = localStorage.getItem("theme") || "dark";
+      if (CUSTOM.indexOf(t) >= 0) {
+        var l = document.createElement("link");
+        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css";
+        document.head.appendChild(l);
+      } else {
+        document.documentElement.dataset.theme = t;
+      }
+    } catch (_) { document.documentElement.dataset.theme = "dark"; }
+  })();
+</script>
 </head>
 <body>
 
@@ -244,30 +374,9 @@
 After you decide, the app runs 10,000 simulated hands and tells you if you were right.</p>
 
 <div class="panel">
-  <div class="controls">
-    <div class="control">
-      <label for="variant">Variant</label>
-      <select id="variant">
-        <option value="holdem" selected>Texas Hold'em</option>
-        <option value="fivecard">5-Card Draw</option>
-        <option value="sevenstud">7-Card Stud</option>
-      </select>
-    </div>
-    <div class="control">
-      <label for="players">Players (total)</label>
-      <select id="players">
-        <option>2</option><option>3</option><option>4</option>
-        <option value="5" selected>5</option>
-        <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="settings">
-    <label>
-      <input type="checkbox" id="revealOnFold">
-      Reveal remaining cards on fold
-    </label>
+  <div class="game-header">
+    <div class="game-name" id="gameName">Texas Hold'em</div>
+    <div class="game-meta" id="gameMeta">5 players</div>
   </div>
 
   <div id="cards" class="cards"></div>
@@ -287,7 +396,7 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
       <span class="result-val" id="winPct">—</span>
     </div>
     <div class="result-row">
-      <span class="result-label">Fair share (1 / players)</span>
+      <span class="result-label" id="thresholdLabel">Fair share</span>
       <span class="result-val" id="threshold">—</span>
     </div>
     <div class="result-row">
@@ -297,6 +406,49 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
     <div id="feedback" class="feedback"></div>
     <div id="trajectory" class="trajectory"></div>
     <div id="breakdown" class="breakdown"></div>
+  </div>
+
+  <div class="settings-section">
+    <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false">Settings</button>
+    <div id="settingsPanel" class="settings-panel hidden">
+      <label>
+        <span>Variant</span>
+        <select id="variant">
+          <option value="holdem" selected>Texas Hold'em</option>
+          <option value="fivecard">5-Card Draw</option>
+          <option value="sevenstud">7-Card Stud</option>
+        </select>
+      </label>
+      <label>
+        <span>Players (total)</span>
+        <select id="players">
+          <option>2</option><option>3</option><option>4</option>
+          <option value="5" selected>5</option>
+          <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+        </select>
+      </label>
+      <label>
+        <span>Theme</span>
+        <select id="theme">
+          <optgroup label="Built-in">
+            <option value="dark">Dark</option>
+            <option value="felt">Felt</option>
+            <option value="light">Light</option>
+          </optgroup>
+          <optgroup label="Designs">
+            <option value="vegas-neon">Vegas Neon</option>
+            <option value="classic-casino">Classic Casino</option>
+            <option value="classic-burgundy">Classic Burgundy</option>
+            <option value="brutalist">Brutalist</option>
+            <option value="editorial">Editorial</option>
+          </optgroup>
+        </select>
+      </label>
+      <label>
+        <span>Reveal remaining cards on fold</span>
+        <input type="checkbox" id="revealOnFold">
+      </label>
+    </div>
   </div>
 </div>
 
@@ -537,6 +689,9 @@ const verdictEl = document.getElementById("verdict");
 const feedbackEl = document.getElementById("feedback");
 const breakdownEl = document.getElementById("breakdown");
 const trajectoryEl = document.getElementById("trajectory");
+const gameNameEl = document.getElementById("gameName");
+const gameMetaEl = document.getElementById("gameMeta");
+const thresholdLabelEl = document.getElementById("thresholdLabel");
 
 // Equity within this band of the fair-share threshold counts as a TOSS-UP —
 // either decision is reasonable, so we don't second-guess the user.
@@ -562,6 +717,12 @@ function rowLayout(n) { return ROW_LAYOUTS[n] || [n]; }
 function currentVariant() { return VARIANTS[variantSel.value]; }
 function currentStreet() { return currentVariant().streets[streetIdx]; }
 function isFinalStreet() { return streetIdx === currentVariant().streets.length - 1; }
+
+function renderGameHeader() {
+  const n = parseInt(playersSel.value, 10);
+  gameNameEl.textContent = currentVariant().name;
+  gameMetaEl.textContent = `${n} ${n === 1 ? "player" : "players"}`;
+}
 
 function renderCardsInto(target, cards, placeholderCount) {
   target.innerHTML = "";
@@ -641,7 +802,9 @@ function reset() {
   dealBtn.textContent = "Deal";
   variantSel.disabled = false;
   playersSel.disabled = false;
+  document.body.classList.remove("in-hand");
   applyPlayerCap();
+  renderGameHeader();
 }
 
 function dealStreet(idx) {
@@ -691,6 +854,7 @@ function deal() {
   resultsVisible = false;
   dealStreet(0);
   snapshotStreet();
+  document.body.classList.add("in-hand");
   renderHand();
   resultEl.classList.add("hidden");
   feedbackEl.textContent = "";
@@ -730,14 +894,52 @@ async function handleCall(userChoice) {
     endHand("Showdown — hand complete.");
     return;
   }
+
+  // Mid-hand play: sim the current street so the user can see whether they
+  // played with or against the math before the next street is dealt.
+  // Snapshot inputs and lock the variant/player selectors BEFORE the await —
+  // otherwise a variant change during the yield triggers reset(), then this
+  // handler resumes and advanceStreet() runs against the new variant
+  // (potentially single-street), corrupting state or crashing.
+  const playedStreet = currentStreet();
+  const variantKey = variantSel.value;
+  const userSnap = userRevealed.slice();
+  const boardSnap = boardRevealed.slice();
+  const numPlayers = parseInt(playersSel.value, 10);
+  const threshold = 1 / numPlayers;
+  variantSel.disabled = true;
+  playersSel.disabled = true;
+  statusEl.textContent = "Simulating…";
+  await new Promise(r => setTimeout(r, 20));
+  // Defense in depth: if anything still managed to reset the hand during the
+  // yield, bail before touching street state.
+  if (!handInProgress) {
+    variantSel.disabled = false;
+    playersSel.disabled = false;
+    return;
+  }
+  const { winRate } = simulate(userSnap, boardSnap, numPlayers - 1, variantKey, 10000);
+  const verdict = Math.abs(winRate - threshold) <= TOSSUP_BAND
+    ? { text: "TOSS-UP", cls: "tossup" }
+    : winRate > threshold
+      ? { text: "PLAY", cls: "play" }
+      : { text: "FOLD", cls: "fold" };
+
   advanceStreet();
   renderHand();
-  promptDecision();
+  statusEl.innerHTML =
+    `<div class="math-note">${playedStreet.label}: math said ` +
+    `<span class="verdict ${verdict.cls}">${verdict.text}</span></div>` +
+    `<div>${currentStreet().label} — play or fold?</div>`;
+  variantSel.disabled = false;
+  playersSel.disabled = false;
+  callActions.style.display = "flex";
 }
 
 function endHand(summary) {
   handInProgress = false;
   callActions.style.display = "none";
+  document.body.classList.remove("in-hand");
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal again";
   variantSel.disabled = false;
@@ -788,6 +990,7 @@ async function runSimulationAndRender() {
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
   thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
+  thresholdLabelEl.textContent = `Fair share (1 of ${numPlayers})`;
   verdictEl.textContent = verdictText;
   verdictEl.className = "result-val verdict " + verdictClass;
   renderBreakdown(final.distribution, variant, final.user, final.board);
@@ -876,8 +1079,42 @@ playBtn.addEventListener("click", () => handleCall("play"));
 foldBtn.addEventListener("click", () => handleCall("fold"));
 variantSel.addEventListener("change", reset);
 playersSel.addEventListener("change", () => {
+  renderGameHeader();
   if (resultsVisible) runSimulationAndRender();
 });
+
+// ---------- settings ----------
+const settingsToggleEl = document.getElementById("settingsToggle");
+const settingsPanelEl = document.getElementById("settingsPanel");
+const themeSel = document.getElementById("theme");
+
+settingsToggleEl.addEventListener("click", () => {
+  const open = settingsPanelEl.classList.toggle("hidden") === false;
+  settingsToggleEl.setAttribute("aria-expanded", String(open));
+});
+
+const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "editorial"];
+
+function applyTheme(slug) {
+  let link = document.getElementById("theme-css");
+  if (CUSTOM_THEMES.indexOf(slug) >= 0) {
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.id = "theme-css";
+      document.head.appendChild(link);
+    }
+    link.href = `themes/${slug}.css`;
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    if (link) link.remove();
+    document.documentElement.dataset.theme = slug;
+  }
+  try { localStorage.setItem("theme", slug); } catch (_) {}
+}
+
+themeSel.value = localStorage.getItem("theme") || "dark";
+themeSel.addEventListener("change", () => applyTheme(themeSel.value));
 
 reset();
 </script>

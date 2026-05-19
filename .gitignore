@@ -1,0 +1,15 @@
+# Dev / preview artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
