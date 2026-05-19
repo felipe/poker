@@ -4,6 +4,8 @@
 *.jpeg
 *.gif
 *.webp
+# ...except the social-preview image, which is a deployed asset.
+!og.png
 
 # OS junk
 .DS_Store
