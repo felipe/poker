@@ -1,0 +1,16 @@
+project:
+  name: poker
+  type: frontend
+  package_manager: none
+
+context:
+  watchers: [Felipe]
+  notes: |
+    Static HTML/JS/CSS project. No package.json, no build step.
+    Tests run via Node's built-in test runner.
+
+stages:
+  unit:
+    enabled: true
+    command: node --test test/*.test.js
+    must_pass: true

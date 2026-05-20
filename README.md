@@ -150,7 +150,7 @@ Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simula
 node --test test/*.test.js
 ```
 
-Requires **Node 22+** (pinned in `.nvmrc`). The runner has been stable since Node 20; 22 is the current Active LTS.
+Requires **Node 22+** (pinned in `.nvmrc`). The runner has been stable since Node 20; 22 is the LTS line this project is pinned to.
 
 Coverage:
 - `test/evaluator.test.js` — every hand category, the wheel straight, kicker tie-breaks, and a few 7-card best-of-five scenarios.
