@@ -22,7 +22,27 @@ body {
 
 h1 { margin: 0 0 4px; font-size: 1.6rem; }
 .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
-body.in-hand h1, body.in-hand .sub { display: none; }
+/* Header + intro: visually hidden after the first deal (sticky via
+   localStorage + the early-paint script in <head>), since you've read them
+   once and the game UI carries everything you need from then on. The flag
+   lives on <html> because the early-paint script runs before <body> exists.
+   We use the visually-hidden pattern instead of `display: none` so the
+   only <h1> on the page stays in the accessibility tree — a screen-reader
+   user can still hit the document's top-level heading to orient themselves. */
+html.has-played h1,
+html.has-played .sub {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* #deal only hides while a hand is actually in flight, so it can come back
+   between hands. */
 body.in-hand #deal { display: none; }
 
 .panel {
