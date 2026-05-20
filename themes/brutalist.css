@@ -189,7 +189,10 @@
   .btn-fold:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
   .actions { display: flex; gap: 10px; margin-top: 12px; }
-  .actions button { flex: 1; padding: 14px; font-size: 0.85rem; letter-spacing: 0.28em; }
+  /* Match the Deal button's padding + font-size + tracking so the action
+     buttons land at the same height as the lone Deal button when they
+     swap in mid-hand. Without this Play and Fold render ~6px shorter. */
+  .actions button { flex: 1; padding: 16px; font-size: 0.95rem; letter-spacing: 0.3em; }
   .actions .btn-play::before { content: "[ "; }
   .actions .btn-play::after  { content: " ]"; }
   .actions .btn-fold::before { content: "[ "; }
