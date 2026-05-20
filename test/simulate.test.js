@@ -101,6 +101,35 @@ test("dead hand on the river has near-zero equity", () => {
     `dead hand can't dominate, got ${winRate.toFixed(3)}`);
 });
 
+test("simulate rejects unknown variant", () => {
+  assert.throws(() => simulate([], [], 1, "notavariant", 100), TypeError);
+});
+
+test("simulate rejects iterations <= 0", () => {
+  assert.throws(() => simulate([], [], 1, "holdem", 0), RangeError);
+  assert.throws(() => simulate([], [], 1, "holdem", -5), RangeError);
+});
+
+test("simulate rejects non-integer iterations", () => {
+  assert.throws(() => simulate([], [], 1, "holdem", 1.5), RangeError);
+});
+
+test("simulate rejects negative opponent count", () => {
+  assert.throws(() => simulate([], [], -1, "holdem", 100), RangeError);
+});
+
+test("simulate rejects opponent count that exceeds deck capacity", () => {
+  // 7-card stud with 10 opponents needs 7*11=77 cards, deck has 52.
+  assert.throws(() => simulate([], [], 10, "sevenstud", 1), RangeError);
+});
+
+test("simulate rejects duplicate cards across user and board", () => {
+  assert.throws(
+    () => simulate(hand("As", "Kh"), hand("As", "2d", "3c"), 1, "holdem", 100),
+    RangeError,
+  );
+});
+
 test("5-Card Draw distribution centres on weak categories", () => {
   // Random 5-card hand: the categorical distribution should mostly fall in
   // high-card / one-pair (categories 0 and 1).

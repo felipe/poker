@@ -32,15 +32,35 @@ import { VARIANTS } from "./variants.js";
  */
 export function simulate(userRevealed, boardRevealed, numOpponents, variant, iterations) {
   const v = VARIANTS[variant];
+  if (!v) throw new TypeError(`simulate: unknown variant "${variant}"`);
+  if (!Number.isInteger(iterations) || iterations <= 0) {
+    throw new RangeError(`simulate: iterations must be a positive integer, got ${iterations}`);
+  }
+  if (!Number.isInteger(numOpponents) || numOpponents < 0) {
+    throw new RangeError(`simulate: numOpponents must be a non-negative integer, got ${numOpponents}`);
+  }
+  if (userRevealed.length > v.hole) {
+    throw new RangeError(`simulate: userRevealed has ${userRevealed.length} cards, exceeds ${variant} hole=${v.hole}`);
+  }
+  if (boardRevealed.length > v.board) {
+    throw new RangeError(`simulate: boardRevealed has ${boardRevealed.length} cards, exceeds ${variant} board=${v.board}`);
+  }
+
   const used = new Set();
   for (const c of userRevealed) used.add(c.rank * 4 + c.suit);
   for (const c of boardRevealed) used.add(c.rank * 4 + c.suit);
+  if (used.size !== userRevealed.length + boardRevealed.length) {
+    throw new RangeError(`simulate: duplicate cards in userRevealed/boardRevealed`);
+  }
   const remaining = makeDeck().filter(c => !used.has(c.rank * 4 + c.suit));
 
   const userExtra = v.hole - userRevealed.length;
   const boardExtra = v.board - boardRevealed.length;
   const oppCards = v.hole;
   const cardsNeeded = userExtra + boardExtra + numOpponents * oppCards;
+  if (cardsNeeded > remaining.length) {
+    throw new RangeError(`simulate: needs ${cardsNeeded} cards but only ${remaining.length} remain in the deck`);
+  }
 
   let wins = 0;
   const distribution = new Array(9).fill(0);
