@@ -97,7 +97,10 @@ function reset() {
   resultEl.classList.add("hidden");
   callActions.style.display = "none";
   statusEl.textContent = "";
-  promptEl.textContent = "";
+  // Reserve the prompt slot with the only available action so the Deal
+  // button sits at the same vertical position it'll occupy mid-hand —
+  // no jump when Play/Fold swap in (or back out to Deal).
+  promptEl.textContent = "Ready to deal";
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   breakdownEl.innerHTML = "";
@@ -255,7 +258,8 @@ function endHand(summary) {
   variantSel.disabled = false;
   playersSel.disabled = false;
   statusEl.textContent = "Click Deal again for another hand.";
-  promptEl.textContent = "";
+  // Keep the prompt slot filled so the Deal button doesn't jump up.
+  promptEl.textContent = "Ready to deal";
   feedbackEl.textContent = summary;
   feedbackEl.className = "feedback";
 }
