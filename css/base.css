@@ -22,7 +22,13 @@ body {
 
 h1 { margin: 0 0 4px; font-size: 1.6rem; }
 .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center; }
-body.in-hand h1, body.in-hand .sub { display: none; }
+/* Header + intro: hidden permanently after the first deal (sticky via
+   localStorage + the early-paint script in <head>), since you've read it
+   once and the game UI carries everything you need from then on. The flag
+   lives on <html> because the early-paint script runs before <body> exists. */
+html.has-played h1, html.has-played .sub { display: none; }
+/* #deal only hides while a hand is actually in flight, so it can come back
+   between hands. */
 body.in-hand #deal { display: none; }
 
 .panel {

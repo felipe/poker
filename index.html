@@ -43,6 +43,14 @@
       // Storage blocked — fall back to dark (built-in, no link load needed).
       document.documentElement.dataset.theme = "dark";
     }
+    // Sticky intro-header hiding: returning visitors who've already played
+    // skip the title + tagline. Set the class on <html> here so CSS hides
+    // both before the body parses (no flash).
+    try {
+      if (localStorage.getItem("hasPlayed") === "1") {
+        document.documentElement.classList.add("has-played");
+      }
+    } catch (_) {}
   })();
 </script>
 </head>

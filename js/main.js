@@ -153,6 +153,14 @@ function deal() {
   dealStreet(0);
   snapshotStreet();
   document.body.classList.add("in-hand");
+  // Sticky: once you've played at all, the intro header + tagline stay
+  // hidden for good. Re-showing them between hands is noise — you've
+  // read them once. The flag lives on <html> so the head's early-paint
+  // script can also restore it before <body> exists.
+  if (!document.documentElement.classList.contains("has-played")) {
+    document.documentElement.classList.add("has-played");
+    try { localStorage.setItem("hasPlayed", "1"); } catch (_) {}
+  }
   renderHand();
   resultEl.classList.add("hidden");
   feedbackEl.textContent = "";
