@@ -113,6 +113,72 @@ export function streetSummary(ctx) {
 }
 
 /**
+ * When the user is favored to win (≥ 50%), surface the concrete hands that
+ * could still beat them with their respective likelihoods. Below 50% this
+ * returns null — the prose already covers "lots of things beat you" and a
+ * laundry list would be noise.
+ *
+ * Reads the simulator's beatenBy distribution. Drops anything under 1% as
+ * noise. Phrasing knows whether the user already has a hand of that category
+ * (so the threat must be "higher").
+ *
+ * @param {Object} ctx
+ * @param {Array<{label: string, user: Card[], board: Card[], winRate: number, beatenBy: number[]}>} ctx.trajectory
+ * @returns {string|null}
+ */
+export function betterHandsCallout(ctx) {
+  const { trajectory } = ctx;
+  if (!trajectory || trajectory.length === 0) return null;
+  const last = trajectory[trajectory.length - 1];
+  if (!Array.isArray(last.beatenBy)) return null;
+  if (!Number.isFinite(last.winRate) || last.winRate < 0.5) return null;
+
+  // Need a complete 5-card hand to label the user's own category, otherwise
+  // we can't say "a higher pair" vs "a pair" relative to what they hold.
+  const cards = last.user.concat(last.board);
+  if (cards.length < 5) return null;
+  const userCategory = Math.floor(evaluate(cards) / CATEGORY_DIVISOR);
+
+  const items = /** @type {Array<{noun: string, pct: number}>} */ ([]);
+  for (let c = 0; c < 9; c++) {
+    const p = last.beatenBy[c];
+    if (!Number.isFinite(p) || p < 0.01) continue;
+    items.push({ noun: threatNoun(c, userCategory), pct: Math.round(p * 100) });
+  }
+  if (items.length === 0) return null;
+  items.sort((a, b) => b.pct - a.pct);
+
+  const formatted = items.map(i => `${i.noun} (${i.pct}%)`);
+  return `Possible better hands an opponent could have: ${formatted.join(", ")}.`;
+}
+
+/**
+ * Returns the noun-phrase to use for an opponent's beating category, knowing
+ * what category the user themselves landed in. When the categories match, the
+ * opponent must have a HIGHER hand of that category (higher kickers, higher
+ * pair, etc.) — phrased that way so "a pair (8%)" doesn't read as redundant
+ * when the user also has a pair.
+ *
+ * @param {number} oppCat  0..8
+ * @param {number} userCat 0..8
+ */
+function threatNoun(oppCat, userCat) {
+  const same = oppCat === userCat;
+  switch (oppCat) {
+    case 0: return same ? "a higher high card" : "a high-card hand";
+    case 1: return same ? "a higher pair" : "a pair";
+    case 2: return same ? "a higher two pair" : "two pair";
+    case 3: return same ? "higher trips" : "three of a kind";
+    case 4: return same ? "a higher straight" : "a straight";
+    case 5: return same ? "a higher flush" : "a flush";
+    case 6: return same ? "a higher full house" : "a full house";
+    case 7: return same ? "higher quads" : "four of a kind";
+    case 8: return "a straight flush";
+  }
+  return "";
+}
+
+/**
  * Whole-hand synthesis. Names the final hand in plain terms, summarizes the
  * equity arc end-to-end, and explicitly calls out the biggest single-street
  * drop with the board change that caused it. Captures the "why did my odds

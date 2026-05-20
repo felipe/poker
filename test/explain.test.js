@@ -15,7 +15,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
-import { explain, streetSummary, explainTrajectory, recapHand } from "../js/explain.js";
+import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout } from "../js/explain.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -536,6 +536,94 @@ test("recap: returns null when any trajectory point is missing a finite winRate"
       `recap should be null when winRate is ${String(bad)}`,
     );
   }
+});
+
+/* ============================================================
+ * betterHandsCallout — threat enumeration above 50% equity.
+ * ============================================================ */
+
+test("callout: returns null when winRate < 50%", () => {
+  const trajectory = [{
+    label: "River", user: hand("7c", "2d"), board: hand("As", "Kh", "Qd", "Jc", "9s"),
+    winRate: 0.30,
+    beatenBy: [0, 0.4, 0.2, 0.05, 0.03, 0.01, 0.005, 0.001, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: returns null when no realistic threats (all <1%)", () => {
+  const trajectory = [{
+    label: "River", user: hand("As", "Ks"), board: hand("Qs", "Js", "Ts"),
+    winRate: 0.999,
+    beatenBy: [0, 0, 0, 0, 0, 0, 0, 0.001, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: returns null when the user's hand isn't 5 cards yet", () => {
+  // Pre-flop snapshot only — can't categorize the user's hand.
+  const trajectory = [{
+    label: "Pre-flop", user: hand("As", "Ah"), board: [],
+    winRate: 0.85,
+    beatenBy: [0, 0, 0, 0, 0, 0.05, 0.05, 0, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: lists threats with their percentages, sorted by likelihood", () => {
+  const trajectory = [{
+    label: "River", user: hand("Ah", "Kh"), board: hand("Qd", "9c", "7s", "4h", "2c"),
+    winRate: 0.65,
+    beatenBy: [0, 0.12, 0.18, 0.03, 0, 0.02, 0, 0, 0],
+  }];
+  const out = betterHandsCallout({ trajectory });
+  assert.ok(out, "expected a callout string");
+  // User has ace-high (cat 0) since no pair. Opponents with a pair (cat 1)
+  // or two pair (cat 2) beat them.
+  assert.ok(out.startsWith("Possible better hands an opponent could have:"));
+  // Most likely first — 18% two pair comes before 12% pair, then 3% trips, then 2% flush.
+  const idxTwoPair = out.indexOf("two pair");
+  const idxPair = out.indexOf("a pair");
+  const idxTrips = out.indexOf("three of a kind");
+  const idxFlush = out.indexOf("a flush");
+  assert.ok(idxTwoPair > 0 && idxTwoPair < idxPair, "two pair should come before pair");
+  assert.ok(idxPair < idxTrips, "pair should come before trips");
+  assert.ok(idxTrips < idxFlush, "trips should come before flush");
+  // Percentages are integer-formatted.
+  assert.match(out, /\(18%\)/);
+  assert.match(out, /\(12%\)/);
+});
+
+test("callout: uses 'higher' phrasing when opponent's category matches user's", () => {
+  // User has a flush; the only realistic threat is another, higher flush.
+  const trajectory = [{
+    label: "River", user: hand("Kh", "9h"), board: hand("Ah", "5h", "2h", "7d", "3c"),
+    winRate: 0.78,
+    beatenBy: [0, 0, 0, 0, 0, 0.20, 0.02, 0, 0],
+  }];
+  const out = betterHandsCallout({ trajectory });
+  assert.ok(out, "expected a callout");
+  assert.match(out, /a higher flush \(20%\)/);
+  // The full house mass should appear as "a full house" (not "higher" — user has a flush, not a full house).
+  assert.match(out, /a full house \(2%\)/);
+});
+
+test("callout: integrates with a real simulator run on a top-pair hand", () => {
+  // Hold'em river: user has top pair, ace kicker. Equity should be above 50%
+  // heads-up, and the simulator's beatenBy mass should cluster on 'a higher
+  // pair' (no — opponent has ace+ Q+ kicker), two pair, etc.
+  const user = hand("Ac", "Tc");
+  const board = hand("Ts", "7d", "4c", "Jh", "3s");
+  const res = simulate(user, board, 1, "holdem", SIM_ITERATIONS);
+  // Sanity: this is a heads-up favorite by enough that the callout should fire.
+  assert.ok(res.winRate > 0.5, `top pair top kicker should be heads-up favorite, got ${res.winRate.toFixed(3)}`);
+  const out = betterHandsCallout({
+    trajectory: [{ label: "River", user, board, winRate: res.winRate, beatenBy: res.beatenBy }],
+  });
+  assert.ok(out, "expected a callout for a favored hand with real threats");
+  assert.ok(out.startsWith("Possible better hands an opponent could have:"));
+  // At least one threat is above the 1% noise floor.
+  assert.match(out, /\(\d+%\)/);
 });
 
 /* ============================================================

@@ -3,7 +3,7 @@
 
 import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js";
 import { VARIANTS, rowLayout } from "./variants.js";
-import { explainTrajectory, recapHand } from "./explain.js";
+import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -68,6 +68,8 @@ export function renderExplanation(target, params) {
   const blocks = [];
   const recap = recapHand(params);
   if (recap) blocks.push(`<p class="recap">${escape(recap)}</p>`);
+  const threats = betterHandsCallout(params);
+  if (threats) blocks.push(`<p class="threats">${escape(threats)}</p>`);
   for (const p of explainTrajectory(params)) blocks.push(`<p>${escape(p)}</p>`);
   target.innerHTML = blocks.join("");
 }
