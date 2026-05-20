@@ -332,6 +332,12 @@ async function runSimulationAndRender() {
 // ---------- theme ----------
 const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "brutalist-dark", "editorial"];
 
+// Single source of truth (read at module load) for the asset-version query
+// string. The <meta name="asset-version"> lives in index.html's <head>; bump
+// it there and the corresponding <link>/<script> versions, and applyTheme
+// + the early-paint script both pick the new value up automatically.
+const ASSET_VERSION = document.querySelector('meta[name="asset-version"]')?.getAttribute("content") || "1";
+
 /** @param {string} slug */
 function applyTheme(slug) {
   let link = /** @type {HTMLLinkElement | null} */ (document.getElementById("theme-css"));
@@ -342,7 +348,7 @@ function applyTheme(slug) {
       link.id = "theme-css";
       document.head.appendChild(link);
     }
-    link.href = `themes/${slug}.css?v=5`;
+    link.href = `themes/${slug}.css?v=${ASSET_VERSION}`;
     document.documentElement.removeAttribute("data-theme");
   } else {
     if (link) link.remove();

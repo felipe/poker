@@ -20,9 +20,13 @@
 <meta name="twitter:description" content="Play or fold — and learn why.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/felipe/poker/main/og.png">
 
-<!-- Static asset versions: bump these query strings whenever css/* or js/*
-     changes so browsers re-fetch instead of serving the old cached copy.
-     ES modules in particular cache by URL forever once loaded. -->
+<!-- Static asset version. Bump the meta + the <link>/<script> query strings
+     together whenever css/* or js/* changes — browsers cache by full URL,
+     and ES modules in particular cache forever once loaded. The meta is
+     the single source of truth that JS reads (the early-paint script below
+     + js/main.js's applyTheme); the <link>/<script> tags can't reference
+     it in their HTML attributes, so they hardcode the matching value. -->
+<meta name="asset-version" content="5">
 <link rel="stylesheet" href="css/themes.css?v=5">
 <link rel="stylesheet" href="css/base.css?v=5">
 <script>
@@ -33,11 +37,12 @@
   // its rules win over the base.
   (function () {
     var CUSTOM = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "brutalist-dark", "editorial"];
+    var V = document.querySelector('meta[name="asset-version"]').getAttribute("content");
     try {
       var t = localStorage.getItem("theme") || "brutalist";
       if (CUSTOM.indexOf(t) >= 0) {
         var l = document.createElement("link");
-        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css?v=5";
+        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css?v=" + V;
         document.head.appendChild(l);
       } else {
         document.documentElement.dataset.theme = t;
