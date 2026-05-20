@@ -118,13 +118,16 @@ export function streetSummary(ctx) {
  * returns null — the prose already covers "lots of things beat you" and a
  * laundry list would be noise.
  *
- * Reads the simulator's beatenBy distribution. Drops anything under 1% as
- * noise. Phrasing knows whether the user already has a hand of that category
- * (so the threat must be "higher").
+ * Returns a structured payload — callers (the UI in ui.js, the test suite)
+ * decide how to present it. The simulator's beatenBy distribution is bucketed
+ * by the *strongest* beating opponent per iteration, so with N > 1 opponents
+ * each item's percentage is the chance your loss comes from a top hand in
+ * that category, not "any opponent has X". The bar-chart presentation reads
+ * naturally either way.
  *
  * @param {Object} ctx
  * @param {Array<{label: string, user: Card[], board: Card[], winRate: number, beatenBy: number[]}>} ctx.trajectory
- * @returns {string|null}
+ * @returns {{items: Array<{noun: string, p: number, pct: number}>}|null}
  */
 export function betterHandsCallout(ctx) {
   const { trajectory } = ctx;
@@ -139,17 +142,17 @@ export function betterHandsCallout(ctx) {
   if (cards.length < 5) return null;
   const userCategory = Math.floor(evaluate(cards) / CATEGORY_DIVISOR);
 
-  const items = /** @type {Array<{noun: string, pct: number}>} */ ([]);
+  const items = /** @type {Array<{noun: string, p: number, pct: number}>} */ ([]);
   for (let c = 0; c < 9; c++) {
     const p = last.beatenBy[c];
     if (!Number.isFinite(p) || p < 0.01) continue;
-    items.push({ noun: threatNoun(c, userCategory), pct: Math.round(p * 100) });
+    items.push({ noun: threatNoun(c, userCategory), p, pct: Math.round(p * 100) });
   }
   if (items.length === 0) return null;
-  items.sort((a, b) => b.pct - a.pct);
-
-  const formatted = items.map(i => `${i.noun} (${i.pct}%)`);
-  return `Possible better hands an opponent could have: ${formatted.join(", ")}.`;
+  // Sort by raw probability so two threats that round to the same percentage
+  // still order correctly (e.g. 1.4% vs 1.5%).
+  items.sort((a, b) => b.p - a.p);
+  return { items };
 }
 
 /**
@@ -168,12 +171,12 @@ function threatNoun(oppCat, userCat) {
     case 0: return same ? "a higher high card" : "a high-card hand";
     case 1: return same ? "a higher pair" : "a pair";
     case 2: return same ? "a higher two pair" : "two pair";
-    case 3: return same ? "higher trips" : "three of a kind";
+    case 3: return same ? "a higher three of a kind" : "three of a kind";
     case 4: return same ? "a higher straight" : "a straight";
     case 5: return same ? "a higher flush" : "a flush";
     case 6: return same ? "a higher full house" : "a full house";
-    case 7: return same ? "higher quads" : "four of a kind";
-    case 8: return "a straight flush";
+    case 7: return same ? "a higher four of a kind" : "four of a kind";
+    case 8: return same ? "a higher straight flush" : "a straight flush";
   }
   return "";
 }

@@ -56,7 +56,11 @@ export function renderCardsInto(target, cards, placeholderCount) {
  *
  * @param {HTMLElement} target
  * @param {Object} params
- * @param {Array<{label: string, user: Card[], board: Card[], winRate: number}>} params.trajectory
+ * @param {Array<{label: string, user: Card[], board: Card[], winRate: number, beatenBy?: number[]}>} params.trajectory
+ *        Each point carries simulate.js's SimResult fields (winRate +
+ *        distribution + beatenBy). beatenBy is optional in the type so callers
+ *        rendering pre-sim trajectory snapshots are still well-typed; the
+ *        better-hands callout simply doesn't fire when it's absent.
  * @param {number} params.numPlayers
  * @param {string} params.variant
  */
@@ -66,12 +70,46 @@ export function renderExplanation(target, params) {
 
   /** @type {string[]} */
   const blocks = [];
+  // Group the recap and the threats table into a single "summary" block so
+  // they read as one synthesis unit, separated from the per-street narrative
+  // by the shared bottom rule.
+  /** @type {string[]} */
+  const summary = [];
   const recap = recapHand(params);
-  if (recap) blocks.push(`<p class="recap">${escape(recap)}</p>`);
+  if (recap) summary.push(`<p class="recap">${escape(recap)}</p>`);
   const threats = betterHandsCallout(params);
-  if (threats) blocks.push(`<p class="threats">${escape(threats)}</p>`);
+  if (threats) summary.push(threatsTable(threats.items, escape));
+  if (summary.length) blocks.push(`<div class="summary">${summary.join("")}</div>`);
+
   for (const p of explainTrajectory(params)) blocks.push(`<p>${escape(p)}</p>`);
   target.innerHTML = blocks.join("");
+}
+
+/**
+ * Render the better-hands threats as a bar chart that mirrors the chrome of
+ * the existing "Hands you'll likely make" breakdown — same .bar-row markup,
+ * so designer themes that style the breakdown bars carry the look here for
+ * free. Lives inside .explanation as `.threats-bars` so we can keep it
+ * visually grouped with the recap above the per-street prose.
+ *
+ * @param {Array<{noun: string, p: number, pct: number}>} items
+ * @param {(s: string) => string} escape
+ */
+function threatsTable(items, escape) {
+  const rows = items.map(({ noun, pct }) => {
+    // The bar fill is the raw percentage with a 2% floor so 1% threats are
+    // still visible. Matches what renderBreakdown does for its own bars.
+    const w = Math.max(pct, 2);
+    return `<div class="bar-row">
+      <span class="bar-name">${escape(noun)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
+      <span class="bar-pct">${pct}%</span>
+    </div>`;
+  }).join("");
+  return `<div class="threats-bars breakdown">
+    <div class="breakdown-title">Hands that could beat you</div>
+    ${rows}
+  </div>`;
 }
 
 /**
