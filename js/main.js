@@ -342,7 +342,7 @@ function applyTheme(slug) {
       link.id = "theme-css";
       document.head.appendChild(link);
     }
-    link.href = `themes/${slug}.css?v=2`;
+    link.href = `themes/${slug}.css?v=3`;
     document.documentElement.removeAttribute("data-theme");
   } else {
     if (link) link.remove();
