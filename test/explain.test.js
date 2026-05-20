@@ -15,7 +15,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
-import { explain, streetSummary, explainTrajectory, recapHand } from "../js/explain.js";
+import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout } from "../js/explain.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -535,6 +535,123 @@ test("recap: returns null when any trajectory point is missing a finite winRate"
       recapHand({ trajectory: traj, variant: "holdem" }), null,
       `recap should be null when winRate is ${String(bad)}`,
     );
+  }
+});
+
+/* ============================================================
+ * betterHandsCallout — threat enumeration above 50% equity.
+ * ============================================================ */
+
+test("callout: returns null when winRate < 50%", () => {
+  const trajectory = [{
+    label: "River", user: hand("7c", "2d"), board: hand("As", "Kh", "Qd", "Jc", "9s"),
+    winRate: 0.30,
+    beatenBy: [0, 0.4, 0.2, 0.05, 0.03, 0.01, 0.005, 0.001, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: returns null when no realistic threats (all <1%)", () => {
+  const trajectory = [{
+    label: "River", user: hand("As", "Ks"), board: hand("Qs", "Js", "Ts"),
+    winRate: 0.999,
+    beatenBy: [0, 0, 0, 0, 0, 0, 0, 0.001, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: returns null when the user's hand isn't 5 cards yet", () => {
+  // Pre-flop snapshot only — can't categorize the user's hand.
+  const trajectory = [{
+    label: "Pre-flop", user: hand("As", "Ah"), board: [],
+    winRate: 0.85,
+    beatenBy: [0, 0, 0, 0, 0, 0.05, 0.05, 0, 0],
+  }];
+  assert.equal(betterHandsCallout({ trajectory }), null);
+});
+
+test("callout: lists threats with their percentages, sorted by likelihood", () => {
+  const trajectory = [{
+    label: "River", user: hand("Ah", "Kh"), board: hand("Qd", "9c", "7s", "4h", "2c"),
+    winRate: 0.65,
+    beatenBy: [0, 0.12, 0.18, 0.03, 0, 0.02, 0, 0, 0],
+  }];
+  const out = betterHandsCallout({ trajectory });
+  assert.ok(out, "expected callout payload");
+  // User has ace-high (cat 0) since no pair. Opponents in cats 1/2/3/5 beat them.
+  // Items are sorted most-likely first.
+  assert.deepEqual(
+    out.items.map(i => ({ noun: i.noun, pct: i.pct })),
+    [
+      { noun: "two pair", pct: 18 },
+      { noun: "a pair", pct: 12 },
+      { noun: "three of a kind", pct: 3 },
+      { noun: "a flush", pct: 2 },
+    ],
+  );
+});
+
+test("callout: sorts by raw probability when rounded percentages tie", () => {
+  // 1.4% and 1.5% both round to 1%/2%. Sorted by raw p, the 1.5% threat
+  // must come first regardless of how Math.round breaks the tie.
+  const trajectory = [{
+    label: "River", user: hand("Ah", "Kh"), board: hand("Qd", "9c", "7s", "4h", "2c"),
+    winRate: 0.60,
+    beatenBy: [0, 0.014, 0.015, 0, 0, 0, 0, 0, 0],
+  }];
+  const out = betterHandsCallout({ trajectory });
+  assert.ok(out);
+  // two pair (p=0.015) must sort before a pair (p=0.014).
+  assert.equal(out.items[0].noun, "two pair");
+  assert.equal(out.items[1].noun, "a pair");
+});
+
+test("callout: uses 'higher' phrasing when opponent's category matches user's", () => {
+  // User has a flush; the only realistic threat is another, higher flush.
+  const trajectory = [{
+    label: "River", user: hand("Kh", "9h"), board: hand("Ah", "5h", "2h", "7d", "3c"),
+    winRate: 0.78,
+    beatenBy: [0, 0, 0, 0, 0, 0.20, 0.02, 0, 0],
+  }];
+  const out = betterHandsCallout({ trajectory });
+  assert.ok(out);
+  assert.deepEqual(out.items.map(i => i.noun), ["a higher flush", "a full house"]);
+});
+
+test("callout: 'higher' phrasing carries through every category — including straight flush + quads + trips", () => {
+  /** @param {number} cat */
+  const makeCtx = cat => {
+    const setups = {
+      8: { user: hand("As", "Ks"), board: hand("Qs", "Js", "Ts") },           // royal flush
+      7: { user: hand("Ts", "Td"), board: hand("Th", "Tc", "2s") },           // four tens
+      3: { user: hand("Ts", "Td"), board: hand("Th", "Ks", "2s") },           // trip tens
+    };
+    const { user, board } = setups[cat];
+    const beatenBy = new Array(9).fill(0);
+    beatenBy[cat] = 0.10;
+    return { trajectory: [{ label: "River", user, board, winRate: 0.75, beatenBy }] };
+  };
+  assert.equal(betterHandsCallout(makeCtx(8))?.items[0].noun, "a higher straight flush");
+  assert.equal(betterHandsCallout(makeCtx(7))?.items[0].noun, "a higher four of a kind");
+  assert.equal(betterHandsCallout(makeCtx(3))?.items[0].noun, "a higher three of a kind");
+});
+
+test("callout: integrates with a real simulator run on a top-pair hand", () => {
+  // Hold'em river: user has top pair, ace kicker. Above 50% heads-up; the
+  // simulator's beatenBy mass should cluster on two pair / straights, and
+  // the callout should surface at least one threat above the 1% floor.
+  const user = hand("Ac", "Tc");
+  const board = hand("Ts", "7d", "4c", "Jh", "3s");
+  const res = simulate(user, board, 1, "holdem", SIM_ITERATIONS);
+  assert.ok(res.winRate > 0.5, `top pair top kicker should be heads-up favorite, got ${res.winRate.toFixed(3)}`);
+  const out = betterHandsCallout({
+    trajectory: [{ label: "River", user, board, winRate: res.winRate, beatenBy: res.beatenBy }],
+  });
+  assert.ok(out, "expected a callout for a favored hand with real threats");
+  assert.ok(out.items.length > 0, "expected at least one threat above the 1% floor");
+  // Items are sorted most-likely first by raw probability.
+  for (let i = 1; i < out.items.length; i++) {
+    assert.ok(out.items[i - 1].p >= out.items[i].p, "items must be sorted by p descending");
   }
 });
 

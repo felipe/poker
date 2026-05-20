@@ -211,14 +211,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   font-size: 0.95rem;
 }
 .explanation p:last-child { margin-bottom: 0; }
-/* Recap leads the section as the TL;DR; mark it slightly heavier and give it
-   a hairline divider so the per-street narrative below reads as the detail. */
-.explanation p.recap {
-  font-weight: 600;
-  padding-bottom: 10px;
+/* Recap + threats table group as the TL;DR; the per-street narrative below
+   reads as the detail, separated by the summary block's bottom rule. */
+.explanation .summary {
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
+.explanation .summary p.recap {
+  font-weight: 600;
+  margin: 0;
+}
+.explanation .summary p.recap + .threats-bars { margin-top: 14px; }
+.explanation .threats-bars { margin: 0; }
 
 .prompt {
   color: var(--ink);

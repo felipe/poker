@@ -10,7 +10,16 @@ import { VARIANTS } from "./variants.js";
 /**
  * @typedef {Object} SimResult
  * @property {number} winRate        0..1 (ties contribute 1/winners)
- * @property {number[]} distribution length 9, indexed by category 0..8
+ * @property {number[]} distribution length 9, indexed by category 0..8.
+ *                                   How often the user lands in each hand
+ *                                   category.
+ * @property {number[]} beatenBy     length 9, indexed by category 0..8. How
+ *                                   often the user is beaten AND the
+ *                                   strongest beating opponent had a hand of
+ *                                   that category. Sum ≈ 1 - winRate (off by
+ *                                   the tie share, which contributes to
+ *                                   winRate as fractional wins rather than
+ *                                   to beatenBy).
  */
 
 /**
@@ -35,6 +44,7 @@ export function simulate(userRevealed, boardRevealed, numOpponents, variant, ite
 
   let wins = 0;
   const distribution = new Array(9).fill(0);
+  const beatenBy = new Array(9).fill(0);
 
   for (let iter = 0; iter < iterations; iter++) {
     // Partial Fisher–Yates: only swap the prefix we'll actually use.
@@ -51,18 +61,28 @@ export function simulate(userRevealed, boardRevealed, numOpponents, variant, ite
     const userScore = evaluate(userHand);
     distribution[Math.floor(userScore / CATEGORY_DIVISOR)]++;
 
-    let winners = 1;
-    let beaten = false;
+    // Iterate every opponent so we can find the strongest beating hand for
+    // the beatenBy distribution. Slightly more work than the previous
+    // first-beat-and-break, but only every iteration's loop, and the cost
+    // shows up only on hands that have opponents at all.
+    let bestOppScore = -1;
+    let tiedWithUser = 0;
     for (let o = 0; o < numOpponents; o++) {
       const opp = remaining.slice(ptr + o * oppCards, ptr + (o + 1) * oppCards);
       const oppScore = evaluate(opp.concat(fullBoard));
-      if (oppScore > userScore) { beaten = true; break; }
-      if (oppScore === userScore) winners++;
+      if (oppScore > bestOppScore) bestOppScore = oppScore;
+      if (oppScore === userScore) tiedWithUser++;
     }
-    if (!beaten) wins += 1 / winners;
+    if (bestOppScore > userScore) {
+      beatenBy[Math.floor(bestOppScore / CATEGORY_DIVISOR)]++;
+    } else {
+      // Not beaten — user wins outright or splits with the tied opponents.
+      wins += 1 / (1 + tiedWithUser);
+    }
   }
   return {
     winRate: wins / iterations,
     distribution: distribution.map(c => c / iterations),
+    beatenBy: beatenBy.map(c => c / iterations),
   };
 }
