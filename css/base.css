@@ -131,6 +131,14 @@ button:hover:not(:disabled) { opacity: 0.9; }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Match the .actions margin-top so the Deal button sits in the exact same
+   vertical slot the Play/Fold buttons occupy mid-hand. display: block matters
+   here — the default <button> display is inline-block, whose margin-top
+   doesn't collapse with the prompt's margin-bottom (the .actions div does
+   collapse, since it's a regular block). Without forcing block on deal the
+   gap below prompt is 10+12=22px for Deal but only 12px for Play/Fold,
+   giving a ~10px hop every time the active button set swaps. */
+#deal { display: block; margin-top: 12px; }
 .btn-primary { background: var(--accent); color: #1a1a1a; }
 .btn-play { background: var(--good); color: #0a1f10; }
 .btn-fold { background: var(--bad); color: #2a0a0a; }

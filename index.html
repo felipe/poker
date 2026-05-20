@@ -23,8 +23,8 @@
 <!-- Static asset versions: bump these query strings whenever css/* or js/*
      changes so browsers re-fetch instead of serving the old cached copy.
      ES modules in particular cache by URL forever once loaded. -->
-<link rel="stylesheet" href="css/themes.css?v=3">
-<link rel="stylesheet" href="css/base.css?v=3">
+<link rel="stylesheet" href="css/themes.css?v=4">
+<link rel="stylesheet" href="css/base.css?v=4">
 <script>
   // Apply saved theme before first paint to avoid a flash. Built-in themes
   // (dark/felt/light) just set data-theme; designer themes are stylesheets
@@ -37,7 +37,7 @@
       var t = localStorage.getItem("theme") || "brutalist";
       if (CUSTOM.indexOf(t) >= 0) {
         var l = document.createElement("link");
-        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css?v=3";
+        l.rel = "stylesheet"; l.id = "theme-css"; l.href = "themes/" + t + ".css?v=4";
         document.head.appendChild(l);
       } else {
         document.documentElement.dataset.theme = t;
@@ -72,8 +72,8 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
   <div id="cards" class="cards"></div>
   <div id="board" class="cards board hidden"></div>
 
-  <button id="deal" class="btn-primary">Deal</button>
   <div id="prompt" class="prompt"></div>
+  <button id="deal" class="btn-primary">Deal</button>
   <div class="actions" id="callActions" style="display:none">
     <button id="play" class="btn-play">Play</button>
     <button id="fold" class="btn-fold">Fold</button>
@@ -158,6 +158,6 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=3"></script>
+<script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>
