@@ -1,5 +1,7 @@
 # Poker Hand Advisor
 
+**Live demo:** <https://felipe.github.ai/poker>
+
 A single-page poker odds calculator with no build step and no npm/runtime packages. Pick a variant and a player count, deal a hand, and decide whether to play or fold — the app then runs a 10,000-iteration Monte Carlo simulation and grades your decision against the math.
 
 The designer themes (`themes/<slug>.css`) pull display typefaces from Google Fonts via CSS `@import` and therefore need a network connection on first paint; the canonical Dark / Felt / Light themes work fully offline.
@@ -167,3 +169,7 @@ For UI changes, verify manually in the browser:
 - Fold on different streets in Hold'em / Stud and confirm the runout reveal works.
 - Change variants mid-hand — should reset cleanly.
 - Cycle through every theme; each game-header should look intentional, not like the Dark fallback.
+
+## License
+
+[MIT](./LICENSE) — fork it, use it, ship it. If you find it useful, a star on the repo or a sponsorship is appreciated but never expected.
