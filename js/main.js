@@ -330,7 +330,7 @@ async function runSimulationAndRender() {
 }
 
 // ---------- theme ----------
-const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "brutalist-dark", "editorial"];
+const CUSTOM_THEMES = ["vegas-neon", "classic-casino", "classic-burgundy", "brutalist", "brutalist-dark", "print", "terminal", "editorial"];
 
 // Single source of truth (read at module load) for the asset-version query
 // string. The <meta name="asset-version"> lives in index.html's <head>; bump
