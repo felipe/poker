@@ -26,9 +26,19 @@
      the single source of truth that JS reads (the early-paint script below
      + js/main.js's applyTheme); the <link>/<script> tags can't reference
      it in their HTML attributes, so they hardcode the matching value. -->
-<meta name="asset-version" content="5">
+<meta name="asset-version" content="6">
 <link rel="stylesheet" href="css/themes.css?v=6">
 <link rel="stylesheet" href="css/base.css?v=6">
+
+<!-- PWA: makes the app installable + reachable offline. The service worker
+     registration happens at the bottom of js/main.js. theme-color matches
+     the brutalist accent (the default theme); apple-* tags give iOS a
+     proper standalone shell when added to the home screen. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff3a3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Poker">
 <script>
   // Apply saved theme before first paint to avoid a flash. Built-in themes
   // (dark/felt/light) just set data-theme; designer themes are stylesheets

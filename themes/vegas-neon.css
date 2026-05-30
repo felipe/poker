@@ -1,4 +1,4 @@
-  @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Bebas+Neue&display=swap');
+  @import url('./fonts/monoton-bebas.css');
 
   :root {
     --bg-0: #07030f;

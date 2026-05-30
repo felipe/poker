@@ -380,3 +380,12 @@ themeSel.value = savedTheme;
 themeSel.addEventListener("change", () => applyTheme(themeSel.value));
 
 reset();
+
+// Register the service worker for offline behavior. We wait for `load` so
+// the SW install doesn't compete with the first paint, and we swallow
+// registration errors — the app works fine without it, just not offline.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
