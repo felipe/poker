@@ -2,9 +2,44 @@
 
 **Live demo:** <https://felipe.github.ai/poker>
 
-A single-page poker odds calculator with no build step and no npm/runtime packages. Pick a variant and a player count, deal a hand, and decide whether to play or fold — the app then runs a 10,000-iteration Monte Carlo simulation and grades your decision against the math.
+The most pleasant free poker companion that explains *why*. Open source, deterministic, on-device.
 
-The designer themes (`themes/<slug>.css`) pull display typefaces from Google Fonts via CSS `@import` and therefore need a network connection on first paint; the canonical Dark / Felt / Light themes work fully offline.
+## Goal
+
+A poker decision-calibration trainer, not a calculator.
+
+Pick a variant, deal a hand, and commit to playing or folding **before** you see the math. The app then tells you whether you agreed with it, explains why in plain prose, and surfaces what could still beat you. Over time, the loop sharpens your reads.
+
+Three constraints define how this gets built. Each one excludes a category of competitor, and together they define the position:
+
+- **Free, forever.** No accounts, no paywall, no nag-ware, no ads.
+- **Open source.** The math is auditable. The prose is auditable. Fork it, ship it, modify it.
+- **Deterministic and on-device.** No LLM. No remote calls. Same inputs produce the same output, every time. Predictable, fast, fully offline-capable, and tested with golden-output suites.
+
+### Why open source specifically
+
+Three reasons that all hold simultaneously:
+
+1. **We can prove what we claim.** "Deterministic," "exact equity where possible," "no LLM," "no remote calls" — these are claims you should be able to *verify*, not just take on faith. The only way to verify them is to read the code.
+2. **It costs nothing to run.** No servers, no LLM tokens, no API calls. The marginal cost of distributing this to one more user is zero, so there's no economic case for gating it behind a paywall.
+3. **It's all pure math.** Equity calculation, hand evaluation, Monte Carlo simulation — these are textbook material, decades old, sitting in academic papers and open-source libraries. There's no proprietary algorithm to defend; the math belongs to everyone.
+
+### A note on scope
+
+This is a trainer, not a game. Plenty of poker games — many of them free — exist for actually playing hands. This is for the moment before the hand, and the recap after.
+
+## Non-goals
+
+To keep the project's surface area honest, things explicitly out of scope:
+
+- **AI opponents you can play hands against.** This is a trainer, not a game — the loop here is "commit to a decision before you see the math," which doesn't require an opponent. AI play would need accounts, servers, and billing, which contradict the three constraints above.
+- **Cloud sync, accounts, billing, hand-history servers.** All stats and history live on-device. Anything that requires identity is out of scope.
+- **Solver-grade GTO advice.** This is an *equity* trainer, not a *strategy* trainer. "Math says PLAY at this equity vs fair share" is well-defined; "GTO says call 73% of the time here" requires precomputed solver libraries that don't belong on-device.
+- **LLM-driven explanation.** A procedural explainer is slower to author but cheaper to run, never hallucinates, and is testable. The differentiator depends on it.
+
+## Why offline themes need a network
+
+The designer themes (`themes/<slug>.css`) pull display typefaces from Google Fonts via CSS `@import`. They need a network connection on first paint; subsequent loads use browser cache. The canonical Dark / Felt / Light themes work fully offline and that's the fallback when no network is available. (Bundling the typefaces locally is on the roadmap so designer themes go fully offline too.)
 
 ## Running
 
