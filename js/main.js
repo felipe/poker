@@ -35,6 +35,7 @@ const gameMetaEl = /** @type {HTMLElement} */ (document.getElementById("gameMeta
 const settingsToggleEl = /** @type {HTMLButtonElement} */ (document.getElementById("settingsToggle"));
 const settingsPanelEl = /** @type {HTMLElement} */ (document.getElementById("settingsPanel"));
 const themeSel = /** @type {HTMLSelectElement} */ (document.getElementById("theme"));
+const webFontsEl = /** @type {HTMLInputElement} */ (document.getElementById("webFonts"));
 
 // ---------- hand-in-progress state ----------
 /** @type {Card[]} */ let deck = [];
@@ -355,6 +356,74 @@ function applyTheme(slug) {
     document.documentElement.dataset.theme = slug;
   }
   try { localStorage.setItem("theme", slug); } catch (_) {}
+  applyWebFonts();
+}
+
+// ---------- web fonts (opt-in) ----------
+// Each designer theme uses a specific Google Fonts URL. When the user opts in
+// via the settings toggle, we inject a <link> to fetch it; the SW caches the
+// response so subsequent loads work offline. Default = off → themes render in
+// system fallbacks (monospace / Georgia / serif), which still look on-brand.
+/** @type {Record<string, string>} */
+const THEME_FONT_URLS = {
+  "brutalist":         "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap",
+  "brutalist-dark":    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap",
+  "print":             "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap",
+  "terminal":          "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap",
+  "classic-casino":    "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap",
+  "classic-burgundy":  "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap",
+  "editorial":         "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;0,8..60,900;1,8..60,400;1,8..60,600;1,8..60,700&display=swap",
+  "vegas-neon":        "https://fonts.googleapis.com/css2?family=Monoton&family=Bebas+Neue&display=swap",
+};
+
+// Inject or remove the <link id="webfont-css"> that pulls the active theme's
+// Google Fonts CSS. Called from applyTheme (theme switched) and from the
+// toggle change handler. No-op for built-in themes (dark/felt/light) which
+// don't use custom fonts.
+function applyWebFonts() {
+  let link = /** @type {HTMLLinkElement | null} */ (document.getElementById("webfont-css"));
+  let enabled = false;
+  try { enabled = localStorage.getItem("webFonts") === "1"; } catch (_) {}
+  const slug = themeSel.value;
+  const url = enabled ? THEME_FONT_URLS[slug] : undefined;
+  if (url) {
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.id = "webfont-css";
+      document.head.appendChild(link);
+    }
+    if (link.href !== url) link.href = url;
+    primeWebFontCache(url);
+  } else if (link) {
+    link.remove();
+  }
+}
+
+// Belt-and-suspenders cache warming for the active theme's font URL. We fetch
+// the CSS through the SW (which the browser's stylesheet loader sometimes
+// bypasses), then parse out the WOFF2 URLs and fetch each one — because the
+// browser's font loader ALSO sometimes bypasses the SW. Doing this from JS
+// guarantees both the CSS and the WOFF2 files land in CacheStorage so the
+// next load (online or offline) hits the cache. Errors are swallowed: if the
+// user is offline on first opt-in, the toggle just doesn't take effect until
+// next online visit.
+/** @type {Set<string>} */
+const fontUrlsPrimed = new Set();
+/** @param {string} cssUrl */
+function primeWebFontCache(cssUrl) {
+  if (fontUrlsPrimed.has(cssUrl)) return;
+  fontUrlsPrimed.add(cssUrl);
+  fetch(cssUrl).then(r => r.text()).then(text => {
+    const urls = new Set();
+    const re = /url\(([^)]+)\)/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const u = m[1].replace(/^['"]|['"]$/g, "");
+      if (u.startsWith("https://fonts.gstatic.com/")) urls.add(u);
+    }
+    for (const u of urls) fetch(u).catch(() => {});
+  }).catch(() => {});
 }
 
 // ---------- event wiring ----------
@@ -378,6 +447,17 @@ let savedTheme = "brutalist";
 try { savedTheme = localStorage.getItem("theme") || "brutalist"; } catch (_) {}
 themeSel.value = savedTheme;
 themeSel.addEventListener("change", () => applyTheme(themeSel.value));
+
+// Web fonts toggle: read saved preference (default off — we don't want to
+// reach out to Google's CDN without the user opting in), wire change handler.
+let webFontsSaved = false;
+try { webFontsSaved = localStorage.getItem("webFonts") === "1"; } catch (_) {}
+webFontsEl.checked = webFontsSaved;
+webFontsEl.addEventListener("change", () => {
+  try { localStorage.setItem("webFonts", webFontsEl.checked ? "1" : "0"); } catch (_) {}
+  applyWebFonts();
+});
+applyWebFonts();
 
 reset();
 

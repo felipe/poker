@@ -1,17 +1,19 @@
 // Service worker for offline-first behavior.
 //
-// Strategy: cache-first for everything. The asset URLs in index.html carry a
-// ?v=N query string; bumping that version bumps ASSET_VERSION here too, the
-// cache name changes, and the install step re-fetches the new versions.
-// Cross-origin requests, non-GET, and anything else falls through to the
-// network unaltered.
+// Strategy: cache-first for the shell and every same-origin asset, plus the
+// Google Fonts CSS + WOFF2 files referenced by the designer themes. On the
+// very first visit we still need the network so Google can hand us the
+// fonts; from then on everything works offline.
+//
+// Bumping ASSET_VERSION renames the cache, which invalidates everything on
+// next activation (old caches get deleted in the activate handler).
 
 const ASSET_VERSION = "6";
 const CACHE_NAME = `poker-v${ASSET_VERSION}`;
 
-// The shell + the modules + the eight themes. Fonts (themes/fonts/*.woff2)
-// and font bundle CSS get cached on first fetch via the runtime handler —
-// listing every hashed Google Fonts filename here would be brittle.
+// Pre-cached at install time. Fonts are intentionally NOT listed here — they
+// live on Google's CDN and get cached on first fetch via the runtime handler.
+// Listing the (User-Agent-dependent) WOFF2 URLs explicitly would be brittle.
 const PRECACHE = [
   "./",
   "./index.html",
@@ -32,11 +34,15 @@ const PRECACHE = [
   `./themes/editorial.css?v=${ASSET_VERSION}`,
   `./themes/print.css?v=${ASSET_VERSION}`,
   `./themes/terminal.css?v=${ASSET_VERSION}`,
-  "./themes/fonts/jetbrains-mono.css",
-  "./themes/fonts/playfair-cormorant.css",
-  "./themes/fonts/source-serif-4.css",
-  "./themes/fonts/monoton-bebas.css",
 ];
+
+// Cross-origin origins we're willing to cache at runtime. Anything else
+// (analytics, ads, etc. — none today, but future-proof) passes straight
+// through to the network with no SW intervention.
+const RUNTIME_ALLOWED_ORIGINS = new Set([
+  "https://fonts.googleapis.com",
+  "https://fonts.gstatic.com",
+]);
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -58,20 +64,28 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const req = e.request;
-  // Only intercept GET requests on this origin. Anything else (POSTs to other
-  // origins, browser-internal requests) passes through untouched.
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+  const sameOrigin = url.origin === self.location.origin;
+  if (!sameOrigin && !RUNTIME_ALLOWED_ORIGINS.has(url.origin)) return;
+
+  // CSS @import fires as a no-cors request — if we passed it through
+  // unchanged we'd get an opaque response that's unsafe to cache. For
+  // allowed cross-origin requests we re-issue with explicit CORS mode so
+  // Google Fonts gives us a non-opaque, introspectable response.
+  const fetchReq = sameOrigin
+    ? req
+    : new Request(req.url, { mode: "cors", credentials: "omit" });
 
   e.respondWith(
     caches.match(req).then(cached => {
       if (cached) return cached;
-      return fetch(req).then(resp => {
-        // Cache successful same-origin responses for next time. The runtime
-        // catch is how WOFF2 font files end up in the cache after the first
-        // theme that needs them is loaded.
-        if (resp && resp.ok && resp.type === "basic") {
+      return fetch(fetchReq).then(resp => {
+        // Cache successful responses. We accept both "basic" (same-origin)
+        // and "cors" (cross-origin with CORS headers — Google Fonts sends
+        // them). Opaque responses are skipped: they take up an outsized
+        // amount of cache quota and we can't introspect them for errors.
+        if (resp && resp.ok && (resp.type === "basic" || resp.type === "cors")) {
           const clone = resp.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
         }

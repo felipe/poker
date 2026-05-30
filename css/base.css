@@ -406,6 +406,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   width: 16px;
   height: 16px;
   cursor: pointer;
+  flex-shrink: 0;
+}
+.settings-panel label .hint {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-weight: normal;
+  margin-top: 2px;
 }
 .settings-panel select {
   width: auto;
