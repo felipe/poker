@@ -15,7 +15,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
-import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout } from "../js/explain.js";
+import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout, potOdds } from "../js/explain.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -132,16 +132,28 @@ golden("board trips (player not contributing)",
 
 golden("flush draw on 2-flush board",
   { user: ["Jd", "9d"], board: ["6d", "Kd", "2s"], variant: "holdem" },
-  "You haven't paired anything yet — king-high. You're on a flush draw — nine cards complete it, but a higher flush is possible for anyone holding bigger cards in the suit.");
+  "You haven't paired anything yet — king-high. You're on a flush draw — 9 outs, ~35% by the river, but a higher flush is possible for anyone holding bigger cards in the suit.");
 
 golden("open-ended straight draw",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — eight cards complete it.");
+  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~31% by the river.");
 
 golden("gutshot straight draw",
   // 6-7-8-T with the 9 missing in the middle — exactly four cards complete.
   { user: ["7h", "Tc"], board: ["8d", "6s", "2c"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got a gutshot straight draw — four cards complete it.");
+  "You haven't paired anything yet — ten-high. You've got a gutshot straight draw — 4 outs, ~16% by the river.");
+
+// On the turn (4 board cards) the same draws are quoted with their one-card
+// probability, not the flop's two-card probability. Verifies drawPctText
+// scales with how many streets are left.
+
+golden("flush draw on the turn (one card to come)",
+  { user: ["Jd", "9d"], board: ["6d", "Kd", "2s", "3c"], variant: "holdem" },
+  "You haven't paired anything yet — king-high. You're on a flush draw — 9 outs, ~20% by the river, but a higher flush is possible for anyone holding bigger cards in the suit. The board's connected enough that a straight or straight draw is realistic.");
+
+golden("open-ended straight draw on the turn",
+  { user: ["9h", "Th"], board: ["7c", "8s", "2d", "3c"], variant: "holdem" },
+  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~17% by the river. Two of one suit on the board means flush draws are live for anyone holding the suit.");
 
 golden("three of a suit on board, user not in suit",
   { user: ["As", "Kh"], board: ["2d", "8d", "Jd"], variant: "holdem" },
@@ -653,6 +665,40 @@ test("callout: integrates with a real simulator run on a top-pair hand", () => {
   for (let i = 1; i < out.items.length; i++) {
     assert.ok(out.items[i - 1].p >= out.items[i].p, "items must be sorted by p descending");
   }
+});
+
+/* ============================================================
+ * (6) POT ODDS — verdict insert keyed on equity vs price.
+ * ============================================================ */
+
+test("potOdds: returns null when no pot context provided", () => {
+  assert.equal(potOdds({ equity: 0.4 }), null);
+});
+
+test("potOdds: returns null when pot context is malformed", () => {
+  assert.equal(potOdds({ equity: 0.4, pot: { size: 0, callAmount: 10 } }), null);
+  assert.equal(potOdds({ equity: 0.4, pot: { size: 100, callAmount: 0 } }), null);
+  assert.equal(potOdds({ equity: 0.4, pot: { size: NaN, callAmount: 10 } }), null);
+  assert.equal(potOdds({ equity: NaN, pot: { size: 100, callAmount: 30 } }), null);
+});
+
+test("potOdds: getting-the-price case calls PLAY", () => {
+  // Pot 100, call 30 → need 30/130 = 23%. At 36% equity you're way above.
+  const out = potOdds({ equity: 0.36, pot: { size: 100, callAmount: 30 } });
+  assert.equal(out, "Math says PLAY at 36% equity — you need 23% to call, so you're getting the price.");
+});
+
+test("potOdds: not-getting-the-price case calls FOLD", () => {
+  // Pot 50, call 50 → need 50%. At 30% equity you're well short.
+  const out = potOdds({ equity: 0.30, pot: { size: 50, callAmount: 50 } });
+  assert.equal(out, "Math says FOLD at 30% equity — you need 50% to call, so you're not getting the price.");
+});
+
+test("potOdds: break-even case calls PLAY (equity ≥ required is the rule)", () => {
+  // Pot 100, call 50 → need 33.3%. At 33% equity you're at the cusp; the
+  // ≥ comparison means we report PLAY when equity rounds the same as required.
+  const out = potOdds({ equity: 1 / 3, pot: { size: 100, callAmount: 50 } });
+  assert.match(out, /^Math says PLAY at 33% equity — you need 33% to call/);
 });
 
 /* ============================================================

@@ -618,10 +618,11 @@ function holdemDraws(user, board) {
     if (sc[s] === 4) {
       const userInSuit = user.filter(c => c.suit === s);
       if (userInSuit.length > 0) {
+        const pct = drawPctText(9, board.length);
         if (userInSuit.some(c => c.rank === 14)) {
-          parts.push("You're drawing to the nut flush — nine cards complete it.");
+          parts.push(`You're drawing to the nut flush — 9 outs, ${pct} by the river.`);
         } else {
-          parts.push("You're on a flush draw — nine cards complete it, but a higher flush is possible for anyone holding bigger cards in the suit.");
+          parts.push(`You're on a flush draw — 9 outs, ${pct} by the river, but a higher flush is possible for anyone holding bigger cards in the suit.`);
         }
       }
       break;
@@ -663,10 +664,34 @@ function holdemDraws(user, board) {
     }
   }
 
-  if (oesd) parts.push("You've got an open-ended straight draw — eight cards complete it.");
-  else if (gutshot) parts.push("You've got a gutshot straight draw — four cards complete it.");
+  if (oesd) parts.push(`You've got an open-ended straight draw — 8 outs, ${drawPctText(8, board.length)} by the river.`);
+  else if (gutshot) parts.push(`You've got a gutshot straight draw — 4 outs, ${drawPctText(4, board.length)} by the river.`);
 
   return parts.length ? parts.join(" ") : null;
+}
+
+/**
+ * Exact "by the river" probability of completing a draw with `outs` outs,
+ * given how many cards are already on the board. Hold'em-specific (assumes
+ * the user holds 2 hole cards; with board.length=3 there are 47 unseen
+ * cards and 2 cards to come, with board.length=4 there are 46 unseen and 1).
+ *
+ * Returns a string like "~35%" for the prose to splice in. The leading
+ * tilde makes it clear this is rounded; banker's poker references typically
+ * quote rule-of-4 approximations (which round up), but we use the exact
+ * value because the trainer is meant to calibrate, not parrot folklore.
+ *
+ * @param {number} outs
+ * @param {number} boardLen  3 (flop) or 4 (turn) — caller guarantees < 5
+ */
+function drawPctText(outs, boardLen) {
+  const unseen = 47 - (boardLen - 3); // 47 on flop, 46 on turn
+  const remaining = 5 - boardLen;
+  let pMiss = 1;
+  for (let i = 0; i < remaining; i++) {
+    pMiss *= (unseen - outs - i) / (unseen - i);
+  }
+  return `~${Math.round((1 - pMiss) * 100)}%`;
 }
 
 /**
@@ -791,6 +816,35 @@ function noBoardRead(cards) {
 }
 
 /* ---------- Player-count modifier ---------- */
+
+/**
+ * Pot-odds verdict insert. Given the user's equity and the size of the call
+ * relative to the pot, returns one sentence the verdict prose can splice in.
+ * Returns null when no pot context is supplied (free play has no pot model;
+ * quiz mode and hand-history replay will eventually pass one through).
+ *
+ * The threshold is the break-even point: equity needed = call / (pot + call).
+ * Above that you're getting the price; below it you're not.
+ *
+ * @param {Object} ctx
+ * @param {number} ctx.equity                  0..1, the user's win probability
+ * @param {{ size: number, callAmount: number }} [ctx.pot]
+ * @returns {string|null}
+ */
+export function potOdds(ctx) {
+  if (!ctx.pot) return null;
+  const { size, callAmount } = ctx.pot;
+  if (!Number.isFinite(size) || !Number.isFinite(callAmount)) return null;
+  if (size <= 0 || callAmount <= 0) return null;
+  if (!Number.isFinite(ctx.equity) || ctx.equity < 0 || ctx.equity > 1) return null;
+  const required = callAmount / (size + callAmount);
+  const equityPct = Math.round(ctx.equity * 100);
+  const requiredPct = Math.round(required * 100);
+  const gettingPrice = ctx.equity >= required;
+  const verdict = gettingPrice ? "PLAY" : "FOLD";
+  const tail = gettingPrice ? "so you're getting the price" : "so you're not getting the price";
+  return `Math says ${verdict} at ${equityPct}% equity — you need ${requiredPct}% to call, ${tail}.`;
+}
 
 /** @param {number} n */
 function playerCountLine(n) {
