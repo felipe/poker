@@ -1,9 +1,9 @@
 // @ts-check
 // Pure DOM helpers — given target elements and data, draw the view.
 
-import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js?v=8";
-import { VARIANTS, rowLayout } from "./variants.js?v=8";
-import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js?v=8";
+import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js";
+import { VARIANTS, rowLayout } from "./variants.js";
+import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 

@@ -2,8 +2,8 @@
 // Monte Carlo simulator: deals out the remaining cards repeatedly and
 // reports win rate + a distribution of final hand categories.
 
-import { makeDeck, evaluate, evaluateOmaha, CATEGORY_DIVISOR } from "./evaluator.js?v=8";
-import { VARIANTS } from "./variants.js?v=8";
+import { makeDeck, evaluate, evaluateOmaha, CATEGORY_DIVISOR } from "./evaluator.js";
+import { VARIANTS } from "./variants.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 

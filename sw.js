@@ -8,7 +8,7 @@
 // Bumping ASSET_VERSION renames the cache, which invalidates everything on
 // next activation (old caches get deleted in the activate handler).
 
-const ASSET_VERSION = "8";
+const ASSET_VERSION = "9";
 const CACHE_NAME = `poker-v${ASSET_VERSION}`;
 
 // Pre-cached at install time. Fonts are intentionally NOT listed here — they
@@ -29,6 +29,10 @@ const PRECACHE = [
   "./js/simulate.js",
   "./js/ui.js",
   "./js/explain.js",
+  "./js/explain/core.js",
+  "./js/explain/holdem.js",
+  "./js/explain/omaha.js",
+  "./js/explain/draw.js",
   `./themes/vegas-neon.css?v=${ASSET_VERSION}`,
   `./themes/classic-casino.css?v=${ASSET_VERSION}`,
   `./themes/classic-burgundy.css?v=${ASSET_VERSION}`,
@@ -87,8 +91,16 @@ self.addEventListener("fetch", e => {
     ? req
     : new Request(req.url, { mode: "cors", credentials: "omit" });
 
+  // For same-origin assets, ignore the `?v=N` cache-busting query when
+  // matching: the cache NAME (poker-vN) is the generation boundary, so a
+  // request for `main.js?v=9` should hit the precached entry regardless of
+  // how the query is spelled. This keeps the precache manifest from silently
+  // drifting out of sync with the URLs the app actually requests. Scoped to
+  // same-origin so cross-origin font URLs (which DO depend on their query)
+  // still match exactly.
+  const matchOpts = sameOrigin ? { ignoreSearch: true } : undefined;
   e.respondWith(
-    caches.match(req).then(cached => {
+    caches.match(req, matchOpts).then(cached => {
       if (cached) return cached;
       return fetch(fetchReq).then(resp => {
         // Cache successful responses. We accept both "basic" (same-origin)

@@ -652,6 +652,26 @@ test("callout: uses 'higher' phrasing when opponent's category matches user's", 
   assert.deepEqual(out.items.map(i => i.noun), ["a higher flush", "a full house"]);
 });
 
+test("callout: honors the Omaha rule when labeling the user's own hand", () => {
+  // One heart in hole + a four-heart board. Best-5 (Hold'em) sees a flush, but
+  // under the Omaha rule the user has NO flush — so an opposing flush is "a
+  // flush", not "a higher flush". The same cards under Hold'em DO make a flush,
+  // so the phrasing flips. Guards against the prose layer re-introducing the
+  // exact flush trap the variant exists to dispel.
+  const user = hand("Ah", "Kc", "Qd", "Js");
+  const board = hand("2h", "5h", "9h", "Th", "3c");
+  const beatenBy = [0, 0, 0, 0, 0, 0.10, 0.05, 0, 0];
+  const traj = [{ label: "River", user, board, winRate: 0.62, beatenBy }];
+
+  const omaha = betterHandsCallout({ variant: "omaha", trajectory: traj });
+  assert.ok(omaha);
+  assert.deepEqual(omaha.items.map(i => i.noun), ["a flush", "a full house"]);
+
+  const holdem = betterHandsCallout({ variant: "holdem", trajectory: traj });
+  assert.ok(holdem);
+  assert.deepEqual(holdem.items.map(i => i.noun), ["a higher flush", "a full house"]);
+});
+
 test("callout: 'higher' phrasing carries through every category — including straight flush + quads + trips", () => {
   /** @param {number} cat */
   const makeCtx = cat => {

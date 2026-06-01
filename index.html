@@ -20,19 +20,20 @@
 <meta name="twitter:description" content="Play or fold — and learn why.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/felipe/poker/main/og.png">
 
-<!-- Static asset version. Bump the meta + the <link>/<script> query strings
-     here AND the `?v=N` suffix on every import in js/*.js whenever css/*
-     or js/* changes — browsers cache by full URL, and ES modules in
-     particular cache forever once loaded. Without versioning the module
-     imports, a fresh main.js can load a stale cousin module from HTTP
-     cache (e.g. main.js@v=N imports an evaluator.js that's missing an
-     export added in v=N). The meta is the single source of truth that
-     JS reads (the early-paint script below + js/main.js's applyTheme);
-     the <link>/<script> tags and the static imports can't reference it,
-     so they hardcode the matching value. -->
-<meta name="asset-version" content="8">
-<link rel="stylesheet" href="css/themes.css?v=8">
-<link rel="stylesheet" href="css/base.css?v=8">
+<!-- Static asset version. Bump the meta + the `?v=N` on the <link>/<script>
+     tags below AND ASSET_VERSION in sw.js together whenever css/* or js/*
+     changes. The cache-busting query only needs to live on the assets the
+     HTML requests directly (the stylesheets + the main.js entry point); the
+     ES module imports inside js/*.js stay clean. The service worker serves a
+     whole asset generation from one named cache (poker-vN), so it never
+     mixes a fresh module with a stale cousin, and it matches with
+     `ignoreSearch` so the query spelling can't cause a miss. The meta is the
+     single source of truth that JS reads (the early-paint script below +
+     js/main.js's applyTheme); the <link>/<script> tags can't reference it in
+     HTML attributes, so they hardcode the matching value. -->
+<meta name="asset-version" content="9">
+<link rel="stylesheet" href="css/themes.css?v=9">
+<link rel="stylesheet" href="css/base.css?v=9">
 
 <!-- PWA: makes the app installable + reachable offline. The service worker
      registration happens at the bottom of js/main.js. theme-color matches
@@ -186,6 +187,6 @@ After you decide, the app runs 10,000 simulated hands and tells you if you were 
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=8"></script>
+<script type="module" src="js/main.js?v=9"></script>
 </body>
 </html>
