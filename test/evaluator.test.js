@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { makeDeck, shuffle, evaluate, CATEGORY_DIVISOR } from "../js/evaluator.js";
+import { makeDeck, shuffle, evaluate, evaluateOmaha, CATEGORY_DIVISOR } from "../js/evaluator.js";
 import { hand } from "./_cards.js";
 
 /** @param {number} score */
@@ -180,4 +180,72 @@ test("7 cards: straight flush ranked above trips", () => {
 test("evaluate is deterministic for the same input", () => {
   const h = hand("As", "Ah", "Ks", "Kh", "Qd");
   assert.equal(evaluate(h), evaluate(h));
+});
+
+// ---------- evaluateOmaha: must use exactly 2 hole + 3 board ----------
+
+test("evaluateOmaha: the classic flush trap — 1 hole suit-card + 4 board suit-cards is NOT a flush", () => {
+  // User has one heart in hole, board has four hearts. In Hold'em this would
+  // be a flush; in Omaha you must use exactly 2 hole cards of the suit, so
+  // this resolves to "best non-flush hand reachable through 2+3".
+  const hole = hand("Ah", "Kc", "Qc", "Jc");
+  const board = hand("2h", "5h", "9h", "Th", "3s");
+  const score = evaluateOmaha(hole, board);
+  assert.ok(cat(score) < 5, `expected sub-flush category, got ${cat(score)} (${score})`);
+});
+
+test("evaluateOmaha: 2 hole suit-cards + 3 board suit-cards IS a flush", () => {
+  const hole = hand("Ah", "Kh", "Qc", "Jc");
+  const board = hand("2h", "5h", "9h", "3c", "4s");
+  const score = evaluateOmaha(hole, board);
+  assert.equal(cat(score), 5, `expected flush, got category ${cat(score)}`);
+});
+
+test("evaluateOmaha: four of a kind in hole is NOT four of a kind (you can only play 2)", () => {
+  // Four aces in hand — but Omaha forces you to commit only 2 of them, so the
+  // best you can do is a pair of aces plus 3 board kickers.
+  const hole = hand("As", "Ah", "Ad", "Ac");
+  const board = hand("Kh", "Qd", "Jc", "9s", "2c");
+  const score = evaluateOmaha(hole, board);
+  assert.equal(cat(score), 1, `expected one pair, got category ${cat(score)}`);
+});
+
+test("evaluateOmaha: straight requires using 2 hole cards", () => {
+  // Hole: 7h 8c (any pair of) — board: 5d 6s 9h Tc 2c. Best line plays
+  // 7+8 from hole with 5+6+9 from board for the straight 5-9. Confirms the
+  // evaluator finds the 2+3 line that completes a straight.
+  const hole = hand("7h", "8c", "2s", "3d");
+  const board = hand("5d", "6s", "9h", "Tc", "2c");
+  const score = evaluateOmaha(hole, board);
+  assert.equal(cat(score), 4, `expected straight, got category ${cat(score)}`);
+});
+
+test("evaluateOmaha: full house from pocket pair + trips on board", () => {
+  // Pocket twos + three nines on board = nines full of twos. Need trips on
+  // the board (not just a pair) because the user can only commit 2 hole cards.
+  const hole = hand("2s", "2h", "Kc", "Qd");
+  const board = hand("9h", "9c", "9d", "5s", "7c");
+  const score = evaluateOmaha(hole, board);
+  assert.equal(cat(score), 6, `expected full house, got category ${cat(score)}`);
+});
+
+test("evaluateOmaha: requires exactly 4 hole cards", () => {
+  assert.throws(() => evaluateOmaha(hand("As", "Ah", "Ad"), hand("Kh", "Qd", "Jc", "9s", "2c")));
+  assert.throws(() => evaluateOmaha(hand("As", "Ah", "Ad", "Ac", "Kh"), hand("Kh", "Qd", "Jc", "9s", "2c")));
+});
+
+test("evaluateOmaha: returns 0 when board is shorter than 3 cards", () => {
+  assert.equal(evaluateOmaha(hand("As", "Ah", "Kc", "Qc"), hand("Ah")), 0);
+  assert.equal(evaluateOmaha(hand("As", "Ah", "Kc", "Qc"), hand()), 0);
+});
+
+test("evaluateOmaha: works with partial boards (flop + turn)", () => {
+  const hole = hand("As", "Ah", "Kc", "Qc");
+  // Flop only: best is just the pocket aces + best 3 board kickers.
+  const flopOnly = evaluateOmaha(hole, hand("9d", "5h", "2c"));
+  assert.equal(cat(flopOnly), 1, "flop-only should give a pair");
+  // Turn: same line, kickers shift.
+  const turn = evaluateOmaha(hole, hand("9d", "5h", "2c", "Jd"));
+  assert.equal(cat(turn), 1, "turn should still be a pair (no improvement)");
+  assert.ok(turn >= flopOnly, "more board cards can only help (or tie)");
 });

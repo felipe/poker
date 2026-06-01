@@ -1,11 +1,11 @@
 // @ts-check
 // Entry point — DOM refs, state, flow, and event wiring.
 
-import { makeDeck, shuffle } from "./evaluator.js";
-import { VARIANTS, maxPlayersForVariant, TOSSUP_BAND } from "./variants.js";
-import { simulate } from "./simulate.js";
-import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation } from "./ui.js";
-import { streetSummary } from "./explain.js";
+import { makeDeck, shuffle } from "./evaluator.js?v=8";
+import { VARIANTS, maxPlayersForVariant, TOSSUP_BAND } from "./variants.js?v=8";
+import { simulate } from "./simulate.js?v=8";
+import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation } from "./ui.js?v=8";
+import { streetSummary } from "./explain.js?v=8";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 

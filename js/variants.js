@@ -29,6 +29,15 @@ export const VARIANTS = {
       { label: "River",    foldText: "on the river", user: 2, board: 5 },
     ],
   },
+  omaha: {
+    name: "Pot-Limit Omaha", hole: 4, board: 5,
+    streets: [
+      { label: "Pre-flop", foldText: "pre-flop",     user: 4, board: 0 },
+      { label: "Flop",     foldText: "on the flop",  user: 4, board: 3 },
+      { label: "Turn",     foldText: "on the turn",  user: 4, board: 4 },
+      { label: "River",    foldText: "on the river", user: 4, board: 5 },
+    ],
+  },
   fivecard: {
     name: "5-Card Draw", hole: 5, board: 0,
     streets: [{ label: "Hand", foldText: "", user: 5, board: 0 }],

@@ -206,6 +206,28 @@ golden("5cd: trips",
   { user: ["As", "Ah", "Ad", "7c", "2s"], board: [], variant: "fivecard" },
   "Three of a kind, aces — strong.");
 
+// --- Omaha -----------------------------------------------------------
+
+golden("omaha: AA double-suited preflop",
+  { user: ["As", "Ah", "Ks", "Qh"], board: [], variant: "omaha" },
+  "Big pocket pair — aces in hand, double-suited. A premium Omaha starter; you'll want to see flops where the rest of your hand can connect.");
+
+golden("omaha: tight rundown preflop",
+  { user: ["9s", "8h", "7d", "6c"], board: [], variant: "omaha" },
+  "Nine-high rundown, rainbow. Connected hands like this make a lot of straights and combo draws — Omaha's sweet spot.");
+
+golden("omaha: scattered hand preflop",
+  { user: ["As", "9h", "5d", "2c"], board: [], variant: "omaha" },
+  "Ace-high scattered, rainbow. Hard to connect with the board cleanly — Omaha penalizes loose 4-card hands.");
+
+golden("omaha: the flush trap on the flop — 1-in-hole, 3-on-board is not a draw",
+  { user: ["Ah", "Kc", "Qd", "Js"], board: ["2h", "5h", "9h"], variant: "omaha" },
+  "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board. Heads up — a single card of a 3-suited board doesn't make a flush in Omaha. You'd need 2 of that suit in your hand and you have only 1. The board has 3 of one suit — any opponent holding 2 of that suit makes a flush.");
+
+golden("omaha: real flush draw — 2-in-hole + 2-on-board",
+  { user: ["Ah", "Kh", "Qc", "Jc"], board: ["2h", "9h", "5d"], variant: "omaha" },
+  "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board. You've got an Omaha flush draw — 2 of one suit in hand backed by 2 on the board, 9 outs, ~35% by the river. Two of one suit on the board — opponents with 2 of that suit in hand have a flush draw.");
+
 // --- 7-Stud ----------------------------------------------------------
 
 golden("7-stud: rolled-up trips on 3rd street",
