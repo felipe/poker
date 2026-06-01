@@ -484,6 +484,7 @@ function closeToolbarPanels(except) {
     if (p === except) continue;
     p.panel.classList.add("hidden");
     p.btn.setAttribute("aria-expanded", "false");
+    p.btn.classList.remove("open");
   }
 }
 for (const p of TOOLBAR_PANELS) {
@@ -493,6 +494,7 @@ for (const p of TOOLBAR_PANELS) {
     closeToolbarPanels(p);
     p.panel.classList.toggle("hidden", !willOpen);
     p.btn.setAttribute("aria-expanded", String(willOpen));
+    p.btn.classList.toggle("open", willOpen);
     if (willOpen && p.onOpen) p.onOpen();
   });
 }
