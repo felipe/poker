@@ -4,7 +4,8 @@
 import { makeDeck, shuffle } from "./evaluator.js";
 import { VARIANTS, maxPlayersForVariant } from "./variants.js";
 import { analyzeStreet, analyzeHand } from "./analysis.js";
-import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml, setupGlossaryPopover } from "./ui.js";
+import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml, setupGlossaryPopover, dismissOnOutside } from "./ui.js";
+import { renderGlossaryList, renderHandRankings } from "./reference.js";
 import { streetSummary } from "./explain.js";
 import { recordAndSave, loadStats, resetStats, summarize } from "./stats.js";
 
@@ -35,6 +36,10 @@ const gameNameEl = /** @type {HTMLElement} */ (document.getElementById("gameName
 const gameMetaEl = /** @type {HTMLElement} */ (document.getElementById("gameMeta"));
 const settingsToggleEl = /** @type {HTMLButtonElement} */ (document.getElementById("settingsToggle"));
 const settingsPanelEl = /** @type {HTMLElement} */ (document.getElementById("settingsPanel"));
+const termsToggleEl = /** @type {HTMLButtonElement} */ (document.getElementById("termsToggle"));
+const termsPanelEl = /** @type {HTMLElement} */ (document.getElementById("termsPanel"));
+const rankingsToggleEl = /** @type {HTMLButtonElement} */ (document.getElementById("rankingsToggle"));
+const rankingsPanelEl = /** @type {HTMLElement} */ (document.getElementById("rankingsPanel"));
 const themeSel = /** @type {HTMLSelectElement} */ (document.getElementById("theme"));
 const webFontsEl = /** @type {HTMLInputElement} */ (document.getElementById("webFonts"));
 const statsSummaryEl = /** @type {HTMLElement} */ (document.getElementById("statsSummary"));
@@ -463,10 +468,40 @@ playersSel.addEventListener("change", () => {
   if (resultsVisible) runSimulationAndRender();
 });
 
-settingsToggleEl.addEventListener("click", () => {
-  const open = settingsPanelEl.classList.toggle("hidden") === false;
-  settingsToggleEl.setAttribute("aria-expanded", String(open));
-});
+// Toolbar panels (settings, glossary terms, hand rankings) are mutually
+// exclusive: opening one closes the others, and an outside tap or Escape closes
+// whatever's open. Each button's aria-expanded tracks its panel.
+const TOOLBAR_PANELS = [
+  { btn: settingsToggleEl, panel: settingsPanelEl },
+  // Re-render the glossary on open so its game filter defaults to the variant
+  // currently selected.
+  { btn: termsToggleEl, panel: termsPanelEl, onOpen: () => renderGlossaryList(termsPanelEl, variantSel.value) },
+  { btn: rankingsToggleEl, panel: rankingsPanelEl },
+];
+/** @param {{btn: HTMLButtonElement, panel: HTMLElement}} [except] */
+function closeToolbarPanels(except) {
+  for (const p of TOOLBAR_PANELS) {
+    if (p === except) continue;
+    p.panel.classList.add("hidden");
+    p.btn.setAttribute("aria-expanded", "false");
+  }
+}
+for (const p of TOOLBAR_PANELS) {
+  p.btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const willOpen = p.panel.classList.contains("hidden");
+    closeToolbarPanels(p);
+    p.panel.classList.toggle("hidden", !willOpen);
+    p.btn.setAttribute("aria-expanded", String(willOpen));
+    if (willOpen && p.onOpen) p.onOpen();
+  });
+}
+// Outside tap / Escape dismisses. Clicks inside a panel or on the bar are kept.
+dismissOnOutside(".settings-panel, .settings-bar", () => closeToolbarPanels());
+
+// Hand rankings are static — render once. The glossary is rendered on open
+// (its filter defaults to the current variant).
+renderHandRankings(rankingsPanelEl);
 
 // Storage may be disabled (private mode, blocked cookies, etc.) — mirror the
 // early-paint script's fallback so the rest of the page still wires up.

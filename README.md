@@ -99,6 +99,8 @@ On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick si
 
 The explainer leans on poker jargon (*outs*, *gutshot*, *equity*, *overpair*, *the nuts*…). A post-render pass wraps the first occurrence of each known term per paragraph in a subtly-underlined element; tap, hover, or keyboard-focus it for a one-line definition in a popover (Escape or an outside tap dismisses it). Matching is case-insensitive and word-boundary-aware (so "outshone" never matches "outs"), and phrases win over the words inside them ("open-ended straight draw" is glossed as one unit). Static dictionary, all client-side — no network.
 
+The toolbar below the result panel also opens two reference overlays from the same dictionary/components: a **book** icon lists every glossary term and definition — with a **game filter** that defaults to the currently selected variant, so a Hold'em player isn't shown Omaha-only terms (switch it to "All games" to see everything) — and a **bar-chart** icon shows the hand-rankings ladder (strongest first, with a small example hand per category rendered from the same card component the trainer uses; cards that don't define the category render as "any card" placeholders). Both close on an outside tap.
+
 ### Decision calibration stats
 
 Each completed hand records your terminal decision (play to showdown, or fold) against the math's verdict at that point. The Settings panel surfaces a running summary — how often you agreed with the math, and whether you lean *tight* (folding hands it would play) or *loose* (playing hands it would fold) — with a Reset button. Stored in `localStorage`, strictly on-device: nothing here is designed to sync or leave the browser. A TOSS-UP always counts as agreement (either call is fine).
@@ -118,8 +120,9 @@ js/
   simulate.js          Monte Carlo simulator
   analysis.js          pure hand analysis: simulate + derive verdict (DOM-free)
   stats.js             on-device decision-calibration stats (DOM-free)
-  glossary.js          poker-term dictionary + matcher for the inline glossary (DOM-free)
+  glossary.js          poker-term dictionary (def + games) + matcher (DOM-free)
   ui.js                pure DOM helpers: card / breakdown / trajectory render
+  reference.js         the glossary-list + hand-rankings toolbar overlays
   explain.js           prose facade: snapshot / trajectory / recap / threats dispatch
   explain/
     core.js              shared helpers: rank/suit naming, counts, scoreFor → category

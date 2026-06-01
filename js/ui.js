@@ -27,6 +27,20 @@ export function escapeHtml(s) {
 }
 
 /**
+ * Dismiss an overlay on an outside interaction: a click whose target isn't
+ * inside `insideSelector`, or Escape. The one place the "click-away / Escape to
+ * close" wiring lives — shared by the glossary popover and the toolbar panels.
+ * @param {string} insideSelector  clicks inside this are kept open
+ * @param {() => void} dismiss
+ */
+export function dismissOnOutside(insideSelector, dismiss) {
+  document.addEventListener("click", e => {
+    if (!(e.target instanceof Element && e.target.closest(insideSelector))) dismiss();
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") dismiss(); });
+}
+
+/**
  * Build a single face-up card element — the standard `.card` with its rank+suit
  * in the corners and a large center pip. This is the one place card markup is
  * defined, so every surface (the hand, the board, and reference tables) renders
@@ -45,7 +59,7 @@ export function cardEl(card) {
 }
 
 /** Build a face-down placeholder (outline) card. @returns {HTMLDivElement} */
-function placeholderEl() {
+export function placeholderEl() {
   const div = document.createElement("div");
   div.className = "card placeholder";
   return div;
@@ -175,16 +189,14 @@ export function setupGlossaryPopover() {
   /** @param {Event} e */
   const glossAt = e => (e.target instanceof Element ? e.target.closest(".gloss") : null);
 
-  document.addEventListener("click", e => {
-    const g = glossAt(e);
-    if (g) { showFor(g); pinned = true; e.stopPropagation(); }
-    else if (!(e.target instanceof Element && e.target.closest(".gloss-popover"))) hide();
-  });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  // Click/tap a term to pin it; hover or keyboard-focus previews it.
+  document.addEventListener("click", e => { const g = glossAt(e); if (g) { showFor(g); pinned = true; } });
   document.addEventListener("mouseover", e => { const g = glossAt(e); if (g && !pinned) showFor(g); });
   document.addEventListener("mouseout", e => { if (glossAt(e) && !pinned) hide(); });
   document.addEventListener("focusin", e => { const g = glossAt(e); if (g) showFor(g); });
   document.addEventListener("focusout", e => { if (glossAt(e) && !pinned) hide(); });
+  // A click outside a term or the popover, or Escape, dismisses it.
+  dismissOnOutside(".gloss, .gloss-popover", hide);
 }
 
 /**

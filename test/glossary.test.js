@@ -5,13 +5,19 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { GLOSSARY, findGlossaryTerms } from "../js/glossary.js";
 
+const KNOWN_GAMES = new Set(["holdem", "omaha", "fivecard", "sevenstud"]);
+
 const slice = (text, m) => text.slice(m.start, m.end);
 
-test("every glossary entry is a non-empty definition", () => {
-  for (const [term, def] of Object.entries(GLOSSARY)) {
-    assert.equal(typeof def, "string");
-    assert.ok(def.trim().length > 0, `${term} has an empty definition`);
+test("every glossary entry has a non-empty definition and valid games", () => {
+  for (const [term, entry] of Object.entries(GLOSSARY)) {
+    assert.equal(typeof entry.def, "string");
+    assert.ok(entry.def.trim().length > 0, `${term} has an empty definition`);
     assert.equal(term, term.toLowerCase(), `${term} key should be lowercase`);
+    if (entry.games !== undefined) {
+      assert.ok(Array.isArray(entry.games) && entry.games.length > 0, `${term} games should be a non-empty array`);
+      for (const g of entry.games) assert.ok(KNOWN_GAMES.has(g), `${term} lists unknown game "${g}"`);
+    }
   }
 });
 
@@ -23,7 +29,7 @@ test("finds a known term and reports its span + definition", () => {
   assert.ok(terms.includes("outs"));
   const fd = found.find(m => m.term === "flush draw");
   assert.equal(slice(text, fd), "flush draw");
-  assert.equal(fd.def, GLOSSARY["flush draw"]);
+  assert.equal(fd.def, GLOSSARY["flush draw"].def);
 });
 
 test("respects word boundaries — 'outshone' is not 'outs'", () => {
