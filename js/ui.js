@@ -4,6 +4,7 @@
 import { SUITS, SUIT_GLYPH, SUIT_COLOR, rankToStr, CATEGORY_NAMES } from "./evaluator.js";
 import { VARIANTS, rowLayout } from "./variants.js";
 import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js";
+import { findGlossaryTerms } from "./glossary.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -111,6 +112,79 @@ export function renderExplanation(target, params) {
 
   for (const p of explainTrajectory(params)) blocks.push(`<p>${escapeHtml(p)}</p>`);
   target.innerHTML = blocks.join("");
+  wrapGlossaryTerms(target);
+}
+
+/**
+ * Post-render pass: wrap the first occurrence of each known glossary term in
+ * each prose paragraph with a `.gloss` span carrying its definition. Operates
+ * on `<p>` text content only, so it never disturbs the threats/breakdown tables
+ * or the surrounding markup, and re-escapes every segment it rebuilds.
+ *
+ * @param {HTMLElement} rootEl
+ */
+export function wrapGlossaryTerms(rootEl) {
+  for (const p of rootEl.querySelectorAll("p")) {
+    const text = p.textContent || "";
+    const matches = findGlossaryTerms(text);
+    if (!matches.length) continue;
+    let html = "";
+    let cursor = 0;
+    for (const m of matches) {
+      html += escapeHtml(text.slice(cursor, m.start));
+      const termText = text.slice(m.start, m.end);
+      const def = escapeHtml(m.def);
+      html += `<span class="gloss" tabindex="0" role="button" aria-label="${escapeHtml(termText)}: ${def}" data-def="${def}">${escapeHtml(termText)}</span>`;
+      cursor = m.end;
+    }
+    html += escapeHtml(text.slice(cursor));
+    p.innerHTML = html;
+  }
+}
+
+/**
+ * Wire the shared glossary popover once at startup. A single floating element is
+ * reused for every term: hover previews it (desktop), tap/click or keyboard
+ * focus pins it (touch + a11y), and an outside tap or Escape dismisses it. Uses
+ * event delegation on `document`, so it survives the explanation re-rendering
+ * every hand.
+ */
+export function setupGlossaryPopover() {
+  const pop = document.createElement("div");
+  pop.className = "gloss-popover";
+  pop.setAttribute("role", "tooltip");
+  pop.hidden = true;
+  document.body.appendChild(pop);
+
+  let pinned = false;
+
+  /** @param {Element} el */
+  const showFor = el => {
+    pop.textContent = el.getAttribute("data-def") || "";
+    pop.hidden = false;
+    const r = el.getBoundingClientRect();
+    pop.style.top = `${window.scrollY + r.bottom + 6}px`;
+    pop.style.left = `${window.scrollX + r.left}px`;
+    // Clamp so a term near the right edge doesn't push the popover off-screen.
+    const pr = pop.getBoundingClientRect();
+    const overflow = r.left + pr.width + 8 - document.documentElement.clientWidth;
+    if (overflow > 0) pop.style.left = `${Math.max(8, window.scrollX + r.left - overflow)}px`;
+  };
+  const hide = () => { pop.hidden = true; pinned = false; };
+
+  /** @param {Event} e */
+  const glossAt = e => (e.target instanceof Element ? e.target.closest(".gloss") : null);
+
+  document.addEventListener("click", e => {
+    const g = glossAt(e);
+    if (g) { showFor(g); pinned = true; e.stopPropagation(); }
+    else if (!(e.target instanceof Element && e.target.closest(".gloss-popover"))) hide();
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  document.addEventListener("mouseover", e => { const g = glossAt(e); if (g && !pinned) showFor(g); });
+  document.addEventListener("mouseout", e => { if (glossAt(e) && !pinned) hide(); });
+  document.addEventListener("focusin", e => { const g = glossAt(e); if (g) showFor(g); });
+  document.addEventListener("focusout", e => { if (glossAt(e) && !pinned) hide(); });
 }
 
 /**

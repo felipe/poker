@@ -464,3 +464,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .stats-summary .stats-main { color: var(--ink, inherit); }
 .stats-summary strong { font-variant-numeric: tabular-nums; }
 .stats-lean { margin-top: 2px; }
+
+/* ---------- Glossary (inline term definitions) ----------
+   Theme-var fallbacks so it degrades on the designer themes. */
+.gloss {
+  border-bottom: 1px dotted var(--accent, currentColor);
+  cursor: help;
+}
+.gloss:hover,
+.gloss:focus-visible {
+  background: var(--accent, currentColor);
+  color: var(--bg, #fff);
+  outline: none;
+  border-radius: 2px;
+}
+/* The popover lives on <body>, outside the themed .panel — designer themes
+   scope their vars there, so we can't rely on them here. Use a self-contained,
+   always-readable tooltip style (high contrast on every theme). */
+.gloss-popover {
+  position: absolute;
+  z-index: 100;
+  max-width: 260px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  background: #1c1c1c;
+  color: #f3f3f3;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.gloss-popover[hidden] { display: none; }

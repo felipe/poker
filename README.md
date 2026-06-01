@@ -95,6 +95,10 @@ Equity > 1 ÷ playercount is the "play" line — you're getting more than your s
 
 On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick sim runs at the current state and the status line reports `<street>: math said PLAY / FOLD / TOSS-UP (XX% win chance)` so you can tell whether you went with or against the math, and by how much, before the next street is dealt. The full result panel (with the equity-by-street chart and hand-category breakdown) still waits until the hand actually resolves.
 
+### Inline glossary
+
+The explainer leans on poker jargon (*outs*, *gutshot*, *equity*, *overpair*, *the nuts*…). A post-render pass wraps the first occurrence of each known term per paragraph in a subtly-underlined element; tap, hover, or keyboard-focus it for a one-line definition in a popover (Escape or an outside tap dismisses it). Matching is case-insensitive and word-boundary-aware (so "outshone" never matches "outs"), and phrases win over the words inside them ("open-ended straight draw" is glossed as one unit). Static dictionary, all client-side — no network.
+
 ### Decision calibration stats
 
 Each completed hand records your terminal decision (play to showdown, or fold) against the math's verdict at that point. The Settings panel surfaces a running summary — how often you agreed with the math, and whether you lean *tight* (folding hands it would play) or *loose* (playing hands it would fold) — with a Reset button. Stored in `localStorage`, strictly on-device: nothing here is designed to sync or leave the browser. A TOSS-UP always counts as agreement (either call is fine).
@@ -114,6 +118,7 @@ js/
   simulate.js          Monte Carlo simulator
   analysis.js          pure hand analysis: simulate + derive verdict (DOM-free)
   stats.js             on-device decision-calibration stats (DOM-free)
+  glossary.js          poker-term dictionary + matcher for the inline glossary (DOM-free)
   ui.js                pure DOM helpers: card / breakdown / trajectory render
   explain.js           prose facade: snapshot / trajectory / recap / threats dispatch
   explain/
@@ -198,7 +203,7 @@ For a standard "best 5 of hole+board" variant, the simulator and evaluator pick 
 
 ## Tests
 
-Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `verdict.js`, `simulate.js`, `analysis.js`, `stats.js`, `explain.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
+Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `verdict.js`, `simulate.js`, `analysis.js`, `stats.js`, `glossary.js`, `explain.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
 
 ```sh
 node --test test/*.test.js
@@ -214,6 +219,7 @@ Coverage:
 - `test/verdict.test.js` — the play/fold/toss-up decision model and the ±1pp band boundary.
 - `test/analysis.test.js` — pure hand analysis (street + full-hand), verdict derivation, and the empty-history guard.
 - `test/stats.test.js` — decision recording, agreement/bias classification, summary rollup, and storage round-trip (with an in-memory stub).
+- `test/glossary.test.js` — the term matcher: word boundaries, case-insensitivity, first-occurrence-per-call, and phrase-wins-over-word overlap resolution.
 
 The UI / DOM layer (`ui.js`, `main.js`) is not unit-tested — that path is covered by manual verification below.
 
