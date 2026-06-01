@@ -18,6 +18,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* App-like: no double-tap-to-zoom and no tap-highlight flash. (Pinch-zoom is
+     disabled via the viewport meta.) */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1 { margin: 0 0 4px; font-size: 1.6rem; }
@@ -360,6 +364,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   border-radius: 6px;
 }
 .icon-btn:hover { color: var(--ink); }
+/* On touch devices :hover sticks after a tap, so a toolbar icon would stay in
+   its hovered state (the themes paint <button>:hover with a solid box) even
+   after its panel closed — reading as a stuck "selected" button. Neutralize
+   hover for the bar's icons on no-hover inputs; the open panel is the feedback.
+   The descendant selector out-specifies the themes' `button:hover`. */
+@media (hover: none) {
+  .settings-bar .icon-btn:hover {
+    background: none;
+    color: var(--muted);
+  }
+}
 /* Keyboard focus needs a visible indicator. Use the theme's accent for the
    ring so it stays legible across light/dark/burgundy/etc. */
 .icon-btn:focus-visible {
