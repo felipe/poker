@@ -85,28 +85,40 @@ function applyPlayerCap() {
 }
 
 // ---------- flow ----------
-function reset() {
+// Zero the hand-in-progress data (deck through history). The live/visible
+// flags are set by the callers, since reset() and deal() want them different.
+function clearHandState() {
   deck = [];
   cursor = 0;
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
   streetHistory = [];
+}
+
+// Blank the result panel + per-hand feedback so a fresh hand starts clean.
+// (Does not touch the status line — reset() and deal() manage that differently.)
+function clearResultPanels() {
+  resultEl.classList.add("hidden");
+  feedbackEl.textContent = "";
+  feedbackEl.className = "feedback";
+  breakdownEl.innerHTML = "";
+  explanationEl.innerHTML = "";
+  trajectoryEl.innerHTML = "";
+}
+
+function reset() {
+  clearHandState();
   resultsVisible = false;
   handInProgress = false;
   renderHand();
-  resultEl.classList.add("hidden");
+  clearResultPanels();
   callActions.style.display = "none";
   statusEl.textContent = "";
   // Reserve the prompt slot with the only available action so the Deal
   // button sits at the same vertical position it'll occupy mid-hand —
   // no jump when Play/Fold swap in (or back out to Deal).
   promptEl.textContent = "Ready to deal";
-  feedbackEl.textContent = "";
-  feedbackEl.className = "feedback";
-  breakdownEl.innerHTML = "";
-  explanationEl.innerHTML = "";
-  trajectoryEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
   variantSel.disabled = false;
@@ -146,12 +158,8 @@ function revealRemaining() {
 }
 
 function deal() {
+  clearHandState();
   deck = shuffle(makeDeck());
-  cursor = 0;
-  streetIdx = 0;
-  userRevealed = [];
-  boardRevealed = [];
-  streetHistory = [];
   handInProgress = true;
   resultsVisible = false;
   dealStreet(0);
@@ -166,12 +174,7 @@ function deal() {
     try { localStorage.setItem("hasPlayed", "1"); } catch (_) {}
   }
   renderHand();
-  resultEl.classList.add("hidden");
-  feedbackEl.textContent = "";
-  feedbackEl.className = "feedback";
-  breakdownEl.innerHTML = "";
-  explanationEl.innerHTML = "";
-  trajectoryEl.innerHTML = "";
+  clearResultPanels();
   dealBtn.disabled = true;
   dealBtn.textContent = "Deal";
   promptDecision();
