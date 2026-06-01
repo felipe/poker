@@ -5,8 +5,8 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { VARIANTS, ROW_LAYOUTS, rowLayout, maxPlayersForVariant, TOSSUP_BAND } from "../js/variants.js";
 
-test("VARIANTS exports all three game types", () => {
-  assert.equal(Object.keys(VARIANTS).sort().join(","), "fivecard,holdem,sevenstud");
+test("VARIANTS exports all four game types", () => {
+  assert.equal(Object.keys(VARIANTS).sort().join(","), "fivecard,holdem,omaha,sevenstud");
 });
 
 test("each variant has the expected shape", () => {
@@ -35,6 +35,16 @@ test("Hold'em: 2 hole, 5 board, 4 streets ending at full hand", () => {
   assert.equal(last.board, 5);
 });
 
+test("Omaha: 4 hole, 5 board, 4 streets ending at full hand", () => {
+  const v = VARIANTS.omaha;
+  assert.equal(v.hole, 4);
+  assert.equal(v.board, 5);
+  assert.equal(v.streets.length, 4);
+  const last = v.streets[v.streets.length - 1];
+  assert.equal(last.user, 4);
+  assert.equal(last.board, 5);
+});
+
 test("5-Card Draw: single street, 5 cards, no board", () => {
   const v = VARIANTS.fivecard;
   assert.equal(v.hole, 5);
@@ -56,6 +66,12 @@ test("maxPlayersForVariant caps at UI maximum of 10", () => {
   // Hold'em: 52 - 2 - 5 = 45 cards remaining, opponents take 2 each →
   // floor(45 / 2) = 22 opponents possible, +1 user = 23. Capped to 10.
   assert.equal(maxPlayersForVariant("holdem"), 10);
+});
+
+test("maxPlayersForVariant: Omaha caps at 10", () => {
+  // 52 - 4 - 5 = 43 cards remaining, opponents take 4 each →
+  // floor(43 / 4) = 10 opponents + 1 user = 11. Capped to 10.
+  assert.equal(maxPlayersForVariant("omaha"), 10);
 });
 
 test("maxPlayersForVariant: 5-Card Draw caps at 10", () => {

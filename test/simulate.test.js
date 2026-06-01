@@ -138,3 +138,46 @@ test("5-Card Draw distribution centres on weak categories", () => {
   assert.ok(lowCatMass > 0.7,
     `most random 5-card hands should be high-card or one-pair, got ${lowCatMass.toFixed(3)}`);
 });
+
+// ---------- Omaha sanity ----------
+
+test("Omaha: pocket aces are favored heads-up — double-suited tops ~70%", () => {
+  // PLO equity for pocket aces depends heavily on the side cards: weak
+  // danglers like 7c-2d land near 60%, double-suited rundown side cards
+  // (AsAhKsQh) push toward 70-73%. We test the strongest flavor against a
+  // random hand and check it lands in the canonical "premium" band.
+  const hole = hand("As", "Ah", "Ks", "Qh");
+  const { winRate } = simulate(hole, [], 1, "omaha", ITERATIONS);
+  assert.ok(winRate >= 0.65 && winRate <= 0.75,
+    `AAds-style heads-up should land 65-75%, got ${winRate.toFixed(3)}`);
+});
+
+test("Omaha: four aces in hand is mediocre, not unbeatable", () => {
+  // The pedagogically-classic Omaha lesson: AAAA looks unbeatable from a
+  // Hold'em mindset but is actually mediocre because the rule lets you play
+  // only 2 of them — the other 2 are dead. Equity is around 50-58% vs random.
+  const hole = hand("As", "Ah", "Ad", "Ac");
+  const { winRate } = simulate(hole, [], 1, "omaha", ITERATIONS);
+  assert.ok(winRate >= 0.45 && winRate <= 0.60,
+    `AAAA heads-up should land 45-60%, got ${winRate.toFixed(3)}`);
+});
+
+test("Omaha: the flush trap — single ace of hearts + 4-heart board does NOT make a flush", () => {
+  // Hold'em would call this a nut flush; in Omaha you can't play the 1
+  // suit-card from hole, so the user must miss the flush. Verifies the
+  // simulator and evaluator agree on the Omaha rule.
+  const hole = hand("Ah", "Kc", "Qd", "Js");
+  const board = hand("2h", "5h", "9h", "Th", "3c");
+  const { distribution } = simulate(hole, board, 0, "omaha", ITERATIONS);
+  // Zero opponents → user's distribution is the user's category. Should
+  // never land in flush (category 5) or above.
+  const flushOrHigher = distribution.slice(5).reduce((a, b) => a + b, 0);
+  assert.equal(flushOrHigher, 0,
+    `Omaha rule violated: single-suit hole + 4-suit board landed in flush ${(flushOrHigher * 100).toFixed(1)}% of iterations`);
+});
+
+test("Omaha: respects deck capacity for player count", () => {
+  // 52 - 4 (user) - 5 (board) = 43, opponents take 4 each → 10 max.
+  // Asking for 11 opponents should fail.
+  assert.throws(() => simulate([], [], 11, "omaha", 10), RangeError);
+});

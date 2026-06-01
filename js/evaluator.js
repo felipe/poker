@@ -157,3 +157,41 @@ export function evaluate(cards) {
     if (rankCount[r] > 0) highs.push(r);
   return pack(0, highs);
 }
+
+/**
+ * Omaha showdown rule: the player MUST use exactly 2 of their 4 hole cards
+ * combined with exactly 3 of the 5 board cards. Unlike Hold'em, you can't
+ * "play the board" or use 3 from your hand even if it would make a better
+ * hand. The classic trap: a single ace of hearts in hole + 4 hearts on the
+ * board is NOT a flush in Omaha — you need 2 hearts in your hand.
+ *
+ * Enumerates C(4,2)=6 hole pairs × C(5,3)=10 board triples = 60 combos and
+ * returns the max score. Same packed-integer format as `evaluate`.
+ *
+ * Accepts partial boards (3 or 4 cards) for street-by-street snapshots, in
+ * which case it uses C(boardLen,3) board triples instead. Returns 0 if the
+ * board has fewer than 3 cards (pre-flop) — there's no 5-card hand to score.
+ *
+ * @param {Card[]} hole   exactly 4 cards
+ * @param {Card[]} board  3, 4, or 5 cards
+ * @returns {number}
+ */
+export function evaluateOmaha(hole, board) {
+  if (hole.length !== 4) throw new RangeError(`evaluateOmaha: hole must be 4 cards, got ${hole.length}`);
+  if (board.length < 3) return 0;
+  if (board.length > 5) throw new RangeError(`evaluateOmaha: board must be ≤ 5 cards, got ${board.length}`);
+  let best = 0;
+  for (let h1 = 0; h1 < 3; h1++) {
+    for (let h2 = h1 + 1; h2 < 4; h2++) {
+      for (let b1 = 0; b1 < board.length - 2; b1++) {
+        for (let b2 = b1 + 1; b2 < board.length - 1; b2++) {
+          for (let b3 = b2 + 1; b3 < board.length; b3++) {
+            const score = evaluate([hole[h1], hole[h2], board[b1], board[b2], board[b3]]);
+            if (score > best) best = score;
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
