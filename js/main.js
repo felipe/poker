@@ -4,7 +4,7 @@
 import { makeDeck, shuffle } from "./evaluator.js";
 import { VARIANTS, maxPlayersForVariant } from "./variants.js";
 import { analyzeStreet, analyzeHand } from "./analysis.js";
-import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml } from "./ui.js";
+import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml, setupGlossaryPopover } from "./ui.js";
 import { streetSummary } from "./explain.js";
 import { recordAndSave, loadStats, resetStats, summarize } from "./stats.js";
 
@@ -489,6 +489,9 @@ applyWebFonts();
 // Stats: render what's stored, and wire the Reset button.
 renderStats(loadStats(statsStore));
 statsResetEl.addEventListener("click", () => renderStats(resetStats(statsStore)));
+
+// Inline glossary popover for the explainer's jargon.
+setupGlossaryPopover();
 
 reset();
 
