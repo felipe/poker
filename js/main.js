@@ -6,6 +6,7 @@ import { VARIANTS, maxPlayersForVariant } from "./variants.js";
 import { analyzeStreet, analyzeHand } from "./analysis.js";
 import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml } from "./ui.js";
 import { streetSummary } from "./explain.js";
+import { recordAndSave, loadStats, resetStats, summarize } from "./stats.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
 
@@ -36,6 +37,8 @@ const settingsToggleEl = /** @type {HTMLButtonElement} */ (document.getElementBy
 const settingsPanelEl = /** @type {HTMLElement} */ (document.getElementById("settingsPanel"));
 const themeSel = /** @type {HTMLSelectElement} */ (document.getElementById("theme"));
 const webFontsEl = /** @type {HTMLInputElement} */ (document.getElementById("webFonts"));
+const statsSummaryEl = /** @type {HTMLElement} */ (document.getElementById("statsSummary"));
+const statsResetEl = /** @type {HTMLButtonElement} */ (document.getElementById("statsReset"));
 
 // ---------- hand-in-progress state ----------
 /** @type {Card[]} */ let deck = [];
@@ -85,28 +88,40 @@ function applyPlayerCap() {
 }
 
 // ---------- flow ----------
-function reset() {
+// Zero the hand-in-progress data (deck through history). The live/visible
+// flags are set by the callers, since reset() and deal() want them different.
+function clearHandState() {
   deck = [];
   cursor = 0;
   streetIdx = 0;
   userRevealed = [];
   boardRevealed = [];
   streetHistory = [];
+}
+
+// Blank the result panel + per-hand feedback so a fresh hand starts clean.
+// (Does not touch the status line — reset() and deal() manage that differently.)
+function clearResultPanels() {
+  resultEl.classList.add("hidden");
+  feedbackEl.textContent = "";
+  feedbackEl.className = "feedback";
+  breakdownEl.innerHTML = "";
+  explanationEl.innerHTML = "";
+  trajectoryEl.innerHTML = "";
+}
+
+function reset() {
+  clearHandState();
   resultsVisible = false;
   handInProgress = false;
   renderHand();
-  resultEl.classList.add("hidden");
+  clearResultPanels();
   callActions.style.display = "none";
   statusEl.textContent = "";
   // Reserve the prompt slot with the only available action so the Deal
   // button sits at the same vertical position it'll occupy mid-hand —
   // no jump when Play/Fold swap in (or back out to Deal).
   promptEl.textContent = "Ready to deal";
-  feedbackEl.textContent = "";
-  feedbackEl.className = "feedback";
-  breakdownEl.innerHTML = "";
-  explanationEl.innerHTML = "";
-  trajectoryEl.innerHTML = "";
   dealBtn.disabled = false;
   dealBtn.textContent = "Deal";
   variantSel.disabled = false;
@@ -146,12 +161,8 @@ function revealRemaining() {
 }
 
 function deal() {
+  clearHandState();
   deck = shuffle(makeDeck());
-  cursor = 0;
-  streetIdx = 0;
-  userRevealed = [];
-  boardRevealed = [];
-  streetHistory = [];
   handInProgress = true;
   resultsVisible = false;
   dealStreet(0);
@@ -166,12 +177,7 @@ function deal() {
     try { localStorage.setItem("hasPlayed", "1"); } catch (_) {}
   }
   renderHand();
-  resultEl.classList.add("hidden");
-  feedbackEl.textContent = "";
-  feedbackEl.className = "feedback";
-  breakdownEl.innerHTML = "";
-  explanationEl.innerHTML = "";
-  trajectoryEl.innerHTML = "";
+  clearResultPanels();
   dealBtn.disabled = true;
   dealBtn.textContent = "Deal";
   promptDecision();
@@ -219,7 +225,7 @@ async function handleCall(userChoice) {
     const summary = foldText ? `You folded ${foldText}.` : "You folded.";
     // Sim at the fold state — equity reflects the decision the user just made,
     // not what they'd have ended up with after the rest of the runout.
-    await runSimulationAndRender();
+    recordOutcome("fold", await runSimulationAndRender());
     if (revealOnFoldEl.checked) {
       revealRemaining();
       renderHand();
@@ -229,7 +235,7 @@ async function handleCall(userChoice) {
   }
 
   if (isFinalStreet()) {
-    await runSimulationAndRender();
+    recordOutcome("play", await runSimulationAndRender());
     endHand("Showdown — hand complete.");
     return;
   }
@@ -279,6 +285,13 @@ function endHand(summary) {
   feedbackEl.className = "feedback";
 }
 
+/**
+ * Run the terminal simulation, render the result panel, and return the math's
+ * verdict + variant so a caller acting on a real decision (fold / showdown) can
+ * record it. Returns null if the body was skipped. Player-count re-sims ignore
+ * the return — they re-render but aren't a new decision.
+ * @returns {Promise<{ verdict: "PLAY"|"FOLD"|"TOSS-UP", variant: string }|null>}
+ */
 async function runSimulationAndRender() {
   // Snapshot inputs before yielding so anything during the await can't change
   // the simulation's effective parameters.
@@ -288,7 +301,7 @@ async function runSimulationAndRender() {
   const history = streetHistory.slice();
   const threshold = 1 / numPlayers;
 
-  await withSimLock(() => {
+  return withSimLock(() => {
     const { trajectory, final, winRate, verdict } = analyzeHand(history, numOpponents, variant, threshold);
 
     winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
@@ -306,7 +319,42 @@ async function runSimulationAndRender() {
     // change after a fold/showdown), restore the deal-again prompt; otherwise
     // endHand() writes the final message right after this returns.
     statusEl.textContent = handInProgress ? "" : "Click Deal again for another hand.";
+
+    return { verdict: verdict.text, variant };
   });
+}
+
+// ---------- stats (on-device decision calibration) ----------
+const statsStore = (() => { try { return localStorage; } catch (_) { return undefined; } })();
+
+/** @param {import("./stats.js").Stats} stats */
+function renderStats(stats) {
+  if (!statsSummaryEl) return;
+  const sum = summarize(stats);
+  if (sum.hands === 0) {
+    statsSummaryEl.textContent = "No hands yet — play one to start tracking.";
+    return;
+  }
+  const lean = sum.lean === "tight"
+    ? "Leaning tight — you fold hands the math would play."
+    : sum.lean === "loose"
+      ? "Leaning loose — you play hands the math would fold."
+      : "Your play/fold balance looks even.";
+  // Content is all fixed strings + integers, so no escaping is needed.
+  statsSummaryEl.innerHTML =
+    `<div class="stats-main">Agreed with the math on <strong>${stats.agreements} of ${sum.hands}</strong> hands (${sum.agreementPct}%).</div>` +
+    `<div class="stats-lean">${lean}</div>`;
+}
+
+/**
+ * Record one terminal decision against the math, persist it, and refresh the
+ * panel. No-op if the sim was skipped.
+ * @param {"play"|"fold"} choice
+ * @param {{ verdict: "PLAY"|"FOLD"|"TOSS-UP", variant: string }|null} res
+ */
+function recordOutcome(choice, res) {
+  if (!res) return;
+  renderStats(recordAndSave(statsStore, { variant: res.variant, choice, verdict: res.verdict }));
 }
 
 // ---------- theme ----------
@@ -437,6 +485,10 @@ webFontsEl.addEventListener("change", () => {
   applyWebFonts();
 });
 applyWebFonts();
+
+// Stats: render what's stored, and wire the Reset button.
+renderStats(loadStats(statsStore));
+statsResetEl.addEventListener("click", () => renderStats(resetStats(statsStore)));
 
 reset();
 
