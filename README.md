@@ -1,6 +1,6 @@
 # Poker Hand Advisor
 
-**Live demo:** <https://felipe.github.ai/poker>
+**Live demo:** <https://felipe.github.io/poker/>
 
 The most pleasant free poker companion that explains *why*. Open source, deterministic, on-device.
 
@@ -56,6 +56,7 @@ There's no build step. Plain HTML/CSS/JS that runs straight from the browser.
 ## Variants
 
 - **Texas Hold'em** — 2 hole + 5 community. Decisions at Pre-flop, Flop, Turn, River.
+- **Pot-Limit Omaha** — 4 hole + 5 community, but you must use *exactly* 2 hole cards and 3 board cards. Decisions at Pre-flop, Flop, Turn, River. (One ace of a suit in hand on a 4-suited board is **not** a flush — the app's prose calls that trap out.)
 - **5-Card Draw** — 5 cards, one decision.
 - **7-Card Stud** — 7 cards across 3rd → 7th street. One decision per street.
 
@@ -69,7 +70,7 @@ The Players selector auto-caps based on what the deck can support after your han
 
 1. Fill in the user's missing hole/community cards from the remaining deck.
 2. Deal random hole cards to each opponent.
-3. Score everyone with the 5–7 card evaluator.
+3. Score everyone with the variant's evaluator (`scoreFor` — best-5 for Hold'em / Draw / Stud, or Omaha's exactly-2-hole + 3-board rule).
 4. Count you as a winner (or fractional winner on a tie).
 
 10,000 iterations puts the win rate within ~1 percentage point of its true value while staying instant on every device tested.
@@ -83,6 +84,8 @@ score = category × 100⁵ + k₁ × 100⁴ + k₂ × 100³ + … + k₅
 ```
 
 `category` is 0..8 (high card → straight flush). `k₁..k₅` are kicker ranks (2..14). Packing into a single integer makes comparisons one `>` instead of a structured tie-break.
+
+`evaluateOmaha(hole, board)` enforces the Omaha rule by taking the max over all C(4,2)×C(5,3) = 60 two-hole + three-board combinations, in the same packed format. `scoreFor(variant, hole, board)` is the one place that picks `evaluate` vs `evaluateOmaha`, so the simulator and the prose explainer can't disagree on the rule.
 
 ### Fair-share threshold
 
@@ -101,10 +104,16 @@ css/
   base.css             structural styles using the variables
 js/
   main.js              DOM refs, state, flow, event wiring (entry)
-  evaluator.js         card model, deck, shuffle, hand evaluator
+  evaluator.js         card model, deck, shuffle, hand evaluators, scoreFor
   variants.js          VARIANTS, row layouts, player cap, toss-up band
   simulate.js          Monte Carlo simulator
   ui.js                pure DOM helpers: card / breakdown / trajectory render
+  explain.js           prose facade: snapshot / trajectory / recap / threats dispatch
+  explain/
+    core.js              shared helpers: rank/suit naming, counts, scoreFor → category
+    holdem.js            Texas Hold'em prose (snapshot, trajectory, recap)
+    omaha.js             Pot-Limit Omaha prose
+    draw.js              5-Card Draw + 7-Stud prose
 themes/                on-demand stylesheets for designer themes
   vegas-neon.css         neon marquee
   classic-casino.css     Monte Carlo green felt on burgundy backdrop, gold leaf
@@ -114,9 +123,10 @@ themes/                on-demand stylesheets for designer themes
   editorial.css          serif magazine spread
 test/                  unit tests, run via `node --test`
   _cards.js              shared card-string parser used by the suites
-  evaluator.test.js      hand evaluator + deck/shuffle
+  evaluator.test.js      hand evaluator + deck/shuffle + Omaha 2+3 rule
   variants.test.js       VARIANTS shape, player cap, row layout
   simulate.test.js       Monte Carlo sanity bounds
+  explain.test.js        prose golden-output suites
 .nvmrc                 pinned Node version for the test runner (22)
 README.md
 .gitignore
@@ -177,11 +187,11 @@ Add an entry to the `VARIANTS` object in `js/variants.js`. Each entry declares t
 - `user` — total cards in the user's hand after this street
 - `board` — total community cards after this street
 
-The simulator and evaluator pick it up automatically. The Players cap is derived from the deck size.
+For a standard "best 5 of hole+board" variant, the simulator and evaluator pick it up automatically and the Players cap is derived from the deck size. A variant with a non-standard showdown rule (like Omaha's exactly-2-hole + 3-board) also needs a branch in `scoreFor` (`js/evaluator.js`) and a prose module under `js/explain/` wired into the `SNAPSHOTS` table in `js/explain.js`.
 
 ## Tests
 
-Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simulate.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
+Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simulate.js`, `explain.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
 
 ```sh
 node --test test/*.test.js
@@ -190,9 +200,10 @@ node --test test/*.test.js
 Requires **Node 22+** (pinned in `.nvmrc`). The runner has been stable since Node 20; 22 is the LTS line this project is pinned to.
 
 Coverage:
-- `test/evaluator.test.js` — every hand category, the wheel straight, kicker tie-breaks, and a few 7-card best-of-five scenarios.
+- `test/evaluator.test.js` — every hand category, the wheel straight, kicker tie-breaks, a few 7-card best-of-five scenarios, and the Omaha exactly-2-hole + 3-board rule (including the single-suited-card flush trap).
 - `test/variants.test.js` — VARIANTS shape, `maxPlayersForVariant` deck math, `rowLayout` for each card count.
-- `test/simulate.test.js` — statistical sanity bounds on the Monte Carlo simulator (pocket aces beat 7-2, equity drops with more opponents, made flush ≈ 90% on the river, etc.). Uses 5,000 iterations and ±5 percentage-point thresholds to stay flake-free.
+- `test/simulate.test.js` — statistical sanity bounds on the Monte Carlo simulator (pocket aces beat 7-2, equity drops with more opponents, made flush ≈ 90% on the river, the pedagogical "four aces is mediocre in Omaha" case, etc.). Uses 5,000 iterations and ±5 percentage-point thresholds to stay flake-free.
+- `test/explain.test.js` — golden-output suites pinning the explainer prose across variants, plus the better-hands threat callout (including the Omaha-rule boundary, so the prose never claims a flush the rule forbids).
 
 The UI / DOM layer (`ui.js`, `main.js`) is not unit-tested — that path is covered by manual verification below.
 
