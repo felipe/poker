@@ -18,6 +18,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* App-like: no double-tap-to-zoom and no tap-highlight flash. (Pinch-zoom is
+     disabled via the viewport meta.) */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1 { margin: 0 0 4px; font-size: 1.6rem; }
@@ -360,6 +364,27 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   border-radius: 6px;
 }
 .icon-btn:hover { color: var(--ink); }
+/* An icon whose drawer is open reads as selected — and one whose drawer is
+   closed does not. Driven by the `.open` class the toggle sets (alongside
+   aria-expanded), not hover, so it's correct on touch and clears the instant
+   the drawer closes. The `.settings-bar` prefix out-specifies the themes'
+   `button:hover`, so the selected look wins over a hover box. */
+.settings-bar .icon-btn.open {
+  /* background-color longhand, not the `background` shorthand: var() inside the
+     shorthand silently fails to compute in some engines (Invalid At
+     Computed-Value Time), leaving the button unstyled. */
+  background-color: var(--accent);
+  color: var(--bg);
+}
+/* On touch :hover sticks after a tap — without this a *closed* icon would keep
+   the themes' button:hover box and read as selected. Neutralize hover only for
+   the bar's unselected icons; the open drawer's icon stays selected (above). */
+@media (hover: none) {
+  .settings-bar .icon-btn:not(.open):hover {
+    background: none;
+    color: var(--muted);
+  }
+}
 /* Keyboard focus needs a visible indicator. Use the theme's accent for the
    ring so it stays legible across light/dark/burgundy/etc. */
 .icon-btn:focus-visible {
