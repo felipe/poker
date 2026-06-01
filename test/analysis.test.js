@@ -39,6 +39,11 @@ test("analyzeHand: one result per street, final is the last, verdict derives fro
   assert.equal(out.verdict.text, "PLAY");
 });
 
+test("analyzeHand: empty or invalid history fails fast with a clear error", () => {
+  assert.throws(() => analyzeHand([], 1, "holdem", 0.5, 50), RangeError);
+  assert.throws(() => analyzeHand(/** @type {any} */ (undefined), 1, "holdem", 0.5, 50), RangeError);
+});
+
 test("analyzeHand: each street carries the simulator fields the chart needs", () => {
   const history = [{ label: "Hand", user: hand("As", "Ah", "Ad", "Kc", "Qs"), board: [] }];
   const out = analyzeHand(history, 1, "fivecard", 0.5, 200);

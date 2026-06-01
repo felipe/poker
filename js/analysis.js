@@ -53,6 +53,9 @@ export function analyzeStreet(user, board, numOpponents, variant, threshold, ite
  * @returns {{ trajectory: StreetResult[], final: StreetResult, winRate: number, verdict: Verdict }}
  */
 export function analyzeHand(history, numOpponents, variant, threshold, iterations = DEFAULT_ITERATIONS) {
+  if (!Array.isArray(history) || history.length === 0) {
+    throw new RangeError(`analyzeHand: history must have at least one street, got ${Array.isArray(history) ? 0 : typeof history}`);
+  }
   const trajectory = history.map(snap => {
     const res = simulate(snap.user, snap.board, numOpponents, variant, iterations);
     return { label: snap.label, user: snap.user, board: snap.board, ...res };
