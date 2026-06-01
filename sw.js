@@ -18,6 +18,8 @@ const PRECACHE = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
   "./icon.png",
   `./css/themes.css?v=${ASSET_VERSION}`,
   `./css/base.css?v=${ASSET_VERSION}`,
@@ -46,9 +48,16 @@ const RUNTIME_ALLOWED_ORIGINS = new Set([
 ]);
 
 self.addEventListener("install", e => {
+  // Force-reload on install so an upstream HTTP cache (CDN, ISP middlebox,
+  // browser HTTP cache from a prior visit) can't shadow the version we just
+  // bumped to. The cache-name bump alone protects SW-controlled fetches,
+  // but the install-time addAll goes through the browser's fetch stack
+  // first — without `cache: "reload"` the browser may return a stale
+  // response and we'd quietly precache the old asset under the new name.
+  const reload = PRECACHE.map(url => new Request(url, { cache: "reload" }));
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE))
+      .then(cache => cache.addAll(reload))
       .then(() => self.skipWaiting())
   );
 });
