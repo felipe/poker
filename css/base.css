@@ -495,3 +495,75 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .gloss-popover[hidden] { display: none; }
+
+/* ---------- Toolbar groups + reference panels ---------- */
+.bar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Glossary + hand-rankings overlays reuse .settings-panel; they can get long,
+   so cap the height and scroll. Inside .panel, so theme vars resolve. */
+.reference-panel {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.ref-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+/* Glossary list */
+.ref-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ref-row.hidden { display: none; }
+.ref-list { margin: 0; }
+.ref-row {
+  padding: 8px 0;
+  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.2));
+}
+.ref-row:first-child { border-top: none; }
+.ref-row dt { font-weight: 600; }
+.ref-row dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--muted, inherit);
+}
+
+/* Hand rankings */
+.ref-rank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.2));
+}
+.ref-rank:first-of-type { border-top: none; }
+.ref-rank-head { flex: 1; min-width: 0; }
+.ref-rank-name { display: block; font-weight: 600; }
+.ref-rank-note {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--muted, inherit);
+}
+.ref-rank-cards { flex-shrink: 0; }
+/* Compact example cards — override the full-size hand/board styling. */
+.reference-panel .card {
+  width: 34px;
+  height: 48px;
+  padding: 3px;
+  border-width: 1px;
+  border-radius: 4px;
+  box-shadow: none;
+}
+.reference-panel .card .top,
+.reference-panel .card .bot { font-size: 0.56rem; letter-spacing: 0; }
+.reference-panel .card .mid { font-size: 0.8rem; }
+.reference-panel .card-row { gap: 3px; }
