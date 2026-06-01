@@ -8,13 +8,21 @@ import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js";
 /** @typedef {import("./evaluator.js").Card} Card */
 
 /**
- * Escape a string for safe interpolation into innerHTML. The single canonical
+ * Escape a string for safe interpolation into HTML. The single canonical
  * HTML-escape for the whole app — both this module and the flow layer use it
- * rather than each re-deriving the replace chain.
+ * rather than each re-deriving the replace chain. Covers the quote characters
+ * too, so it's safe in attribute contexts (`title="${escapeHtml(x)}"`), not
+ * just between tags; for text content the quotes render identically. `&` must
+ * be replaced first so the entities it introduces aren't double-escaped.
  * @param {string} s
  */
 export function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /**
