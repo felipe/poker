@@ -4,8 +4,12 @@
 *.jpeg
 *.gif
 *.webp
-# ...except the social-preview image, which is a deployed asset.
+# ...except deployed assets: the social-preview image and the PWA / iOS
+# home-screen icons (multiple sizes for Chrome installability).
 !og.png
+!icon.png
+!icon-192.png
+!icon-512.png
 
 # OS junk
 .DS_Store
