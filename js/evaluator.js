@@ -195,3 +195,21 @@ export function evaluateOmaha(hole, board) {
   }
   return best;
 }
+
+/**
+ * Packed best-hand score for a holding under the rules of a given variant.
+ * This is the one place that owns *which evaluator a variant uses*: Omaha is
+ * the exactly-2-hole + exactly-3-board rule (`evaluateOmaha`); Hold'em, 5-Card
+ * Draw and 7-Stud are all "best 5 of hole+board" (`evaluate`). The simulator
+ * (which compares raw scores) and the prose layer (which buckets the score
+ * into a category) both route through this, so they can't disagree on the rule.
+ *
+ * @param {string} variant
+ * @param {Card[]} hole
+ * @param {Card[]} board
+ * @returns {number}  same packed-integer format as `evaluate`
+ */
+export function scoreFor(variant, hole, board) {
+  if (variant === "omaha") return evaluateOmaha(hole, board);
+  return evaluate(hole.concat(board));
+}
