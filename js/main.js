@@ -3,8 +3,7 @@
 
 import { makeDeck, shuffle } from "./evaluator.js";
 import { VARIANTS, maxPlayersForVariant } from "./variants.js";
-import { verdictFor } from "./verdict.js";
-import { simulate } from "./simulate.js";
+import { analyzeStreet, analyzeHand } from "./analysis.js";
 import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml } from "./ui.js";
 import { streetSummary } from "./explain.js";
 
@@ -183,6 +182,33 @@ function promptDecision() {
   callActions.style.display = "flex";
 }
 
+/**
+ * Shared control-lock discipline for the (async) simulation flows. Disables the
+ * inputs that could race an in-flight sim, yields once so the "Simulating…"
+ * status can paint, runs `body`, then re-enables on the way out — Deal stays
+ * locked while a hand is still live so a stray click can't abandon it. The
+ * body owns what to compute and render (and bails itself if the hand was reset
+ * during the yield).
+ *
+ * @template T
+ * @param {() => T | Promise<T>} body
+ * @returns {Promise<T>}
+ */
+async function withSimLock(body) {
+  variantSel.disabled = true;
+  playersSel.disabled = true;
+  dealBtn.disabled = true;
+  statusEl.textContent = "Simulating…";
+  await new Promise(r => setTimeout(r, 20));
+  try {
+    return await body();
+  } finally {
+    variantSel.disabled = false;
+    playersSel.disabled = false;
+    dealBtn.disabled = handInProgress;
+  }
+}
+
 /** @param {"play" | "fold"} userChoice */
 async function handleCall(userChoice) {
   callActions.style.display = "none";
@@ -208,40 +234,33 @@ async function handleCall(userChoice) {
     return;
   }
 
-  // Mid-hand play. Snapshot inputs and lock variant/player selectors BEFORE
-  // the yield — a variant change during the await otherwise triggers reset()
-  // mid-flight and advanceStreet() would crash on a smaller streets[] array.
+  // Mid-hand play. Snapshot inputs before the yield so a later change can't
+  // alter the sim's effective parameters.
   const playedStreet = currentStreet();
   const variantKey = variantSel.value;
   const userSnap = userRevealed.slice();
   const boardSnap = boardRevealed.slice();
   const numPlayers = parseInt(playersSel.value, 10);
   const threshold = 1 / numPlayers;
-  variantSel.disabled = true;
-  playersSel.disabled = true;
-  statusEl.textContent = "Simulating…";
-  await new Promise(r => setTimeout(r, 20));
-  if (!handInProgress) {
-    variantSel.disabled = false;
-    playersSel.disabled = false;
-    return;
-  }
-  const { winRate } = simulate(userSnap, boardSnap, numPlayers - 1, variantKey, 10000);
-  const verdict = verdictFor(winRate, threshold);
 
-  advanceStreet();
-  renderHand();
-  const pct = (winRate * 100).toFixed(0);
-  const reason = streetSummary({ userCards: userSnap, boardCards: boardSnap, variant: variantKey });
-  statusEl.innerHTML =
-    `<div class="math-note">${playedStreet.label}: math said ` +
-    `<span class="verdict ${verdict.cls}">${verdict.text}</span>` +
-    ` (${pct}% win chance)</div>` +
-    `<div class="reason">${escapeHtml(reason)}</div>`;
-  promptEl.textContent = `${currentStreet().label} — play or fold?`;
-  variantSel.disabled = false;
-  playersSel.disabled = false;
-  callActions.style.display = "flex";
+  await withSimLock(() => {
+    // Bail if the hand was abandoned during the yield — advanceStreet() would
+    // otherwise run against a stale (possibly shorter) street list.
+    if (!handInProgress) return;
+    const { winRate, verdict } = analyzeStreet(userSnap, boardSnap, numPlayers - 1, variantKey, threshold);
+
+    advanceStreet();
+    renderHand();
+    const pct = (winRate * 100).toFixed(0);
+    const reason = streetSummary({ userCards: userSnap, boardCards: boardSnap, variant: variantKey });
+    statusEl.innerHTML =
+      `<div class="math-note">${playedStreet.label}: math said ` +
+      `<span class="verdict ${verdict.cls}">${verdict.text}</span>` +
+      ` (${pct}% win chance)</div>` +
+      `<div class="reason">${escapeHtml(reason)}</div>`;
+    promptEl.textContent = `${currentStreet().label} — play or fold?`;
+    callActions.style.display = "flex";
+  });
 }
 
 /** @param {string} summary */
@@ -269,48 +288,25 @@ async function runSimulationAndRender() {
   const history = streetHistory.slice();
   const threshold = 1 / numPlayers;
 
-  // Lock all controls BEFORE the yield so resets/deals/variant changes can't
-  // race against the in-flight simulation.
-  variantSel.disabled = true;
-  playersSel.disabled = true;
-  dealBtn.disabled = true;
+  await withSimLock(() => {
+    const { trajectory, final, winRate, verdict } = analyzeHand(history, numOpponents, variant, threshold);
 
-  statusEl.textContent = "Simulating…";
-  await new Promise(r => setTimeout(r, 20));
+    winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
+    thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
+    thresholdLabelEl.textContent = `Fair share (1 of ${numPlayers})`;
+    verdictEl.textContent = verdict.text;
+    verdictEl.className = "result-val verdict " + verdict.cls;
+    renderBreakdown(breakdownEl, final.distribution, variant, final.user, final.board);
+    renderExplanation(explanationEl, { trajectory, numPlayers, variant });
+    renderTrajectory(trajectoryEl, trajectory, threshold);
+    resultEl.classList.remove("hidden");
+    resultsVisible = true;
 
-  // One sim per street the user saw — last is the terminal state used for
-  // the headline verdict and breakdown, the rest power the equity chart.
-  const trajectory = history.map(snap => {
-    const res = simulate(snap.user, snap.board, numOpponents, variant, 10000);
-    return { label: snap.label, user: snap.user, board: snap.board, ...res };
+    // Clear "Simulating…". If the hand is already wrapped up (player-count
+    // change after a fold/showdown), restore the deal-again prompt; otherwise
+    // endHand() writes the final message right after this returns.
+    statusEl.textContent = handInProgress ? "" : "Click Deal again for another hand.";
   });
-  const final = trajectory[trajectory.length - 1];
-  const winRate = final.winRate;
-  const verdict = verdictFor(winRate, threshold);
-
-  winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
-  thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
-  thresholdLabelEl.textContent = `Fair share (1 of ${numPlayers})`;
-  verdictEl.textContent = verdict.text;
-  verdictEl.className = "result-val verdict " + verdict.cls;
-  renderBreakdown(breakdownEl, final.distribution, variant, final.user, final.board);
-  renderExplanation(explanationEl, { trajectory, numPlayers, variant });
-  renderTrajectory(trajectoryEl, trajectory, threshold);
-  resultEl.classList.remove("hidden");
-  resultsVisible = true;
-
-  // Clear "Simulating…". If the hand is already wrapped up (player-count
-  // change after a fold/showdown), restore the deal-again prompt; otherwise
-  // endHand() will write the final message right after this returns.
-  statusEl.textContent = handInProgress ? "" : "Click Deal again for another hand.";
-
-  // Re-open controls. Variant change clears everything via reset();
-  // player-count change re-runs the sim against the resolved hand state.
-  // Deal stays disabled while a hand is in progress so a stray click can't
-  // silently abandon the hand mid-street; endHand() re-enables it.
-  playersSel.disabled = false;
-  variantSel.disabled = false;
-  dealBtn.disabled = handInProgress;
 }
 
 // ---------- theme ----------
