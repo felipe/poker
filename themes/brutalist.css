@@ -255,9 +255,9 @@
   }
   .card.red { color: var(--card-red); }
   .card.black { color: var(--card-black); }
-  .card .top { font-size: 1.05rem; line-height: 1; letter-spacing: -0.04em; }
+  .card .top { font-size: 1.25rem; line-height: 1; letter-spacing: 0.03em; }
   .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
-  .card .bot { font-size: 1.05rem; text-align: left; line-height: 1; transform: rotate(180deg); letter-spacing: -0.04em; }
+  .card .bot { font-size: 1.25rem; text-align: left; line-height: 1; transform: rotate(180deg); letter-spacing: 0.03em; }
   .card.placeholder {
     background:
       repeating-linear-gradient(

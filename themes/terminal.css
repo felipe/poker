@@ -301,9 +301,9 @@
   }
   .card.red { color: var(--card-red); text-shadow: 0 0 4px rgba(255,87,87,0.35); }
   .card.black { color: var(--card-black); text-shadow: 0 0 4px rgba(108,255,156,0.35); }
-  .card .top { font-size: 1.05rem; line-height: 1; letter-spacing: -0.04em; }
+  .card .top { font-size: 1.25rem; line-height: 1; letter-spacing: 0.03em; }
   .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
-  .card .bot { font-size: 1.05rem; text-align: left; line-height: 1; transform: rotate(180deg); letter-spacing: -0.04em; }
+  .card .bot { font-size: 1.25rem; text-align: left; line-height: 1; transform: rotate(180deg); letter-spacing: 0.03em; }
   .card.placeholder {
     background:
       repeating-linear-gradient(
