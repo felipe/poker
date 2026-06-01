@@ -8,7 +8,7 @@
 // Bumping ASSET_VERSION renames the cache, which invalidates everything on
 // next activation (old caches get deleted in the activate handler).
 
-const ASSET_VERSION = "6";
+const ASSET_VERSION = "7";
 const CACHE_NAME = `poker-v${ASSET_VERSION}`;
 
 // Pre-cached at install time. Fonts are intentionally NOT listed here — they
@@ -18,6 +18,7 @@ const PRECACHE = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./icon.png",
   `./css/themes.css?v=${ASSET_VERSION}`,
   `./css/base.css?v=${ASSET_VERSION}`,
   `./js/main.js?v=${ASSET_VERSION}`,
