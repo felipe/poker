@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { VARIANTS, ROW_LAYOUTS, rowLayout, maxPlayersForVariant, TOSSUP_BAND } from "../js/variants.js";
+import { VARIANTS, ROW_LAYOUTS, rowLayout, maxPlayersForVariant } from "../js/variants.js";
 
 test("VARIANTS exports all four game types", () => {
   assert.equal(Object.keys(VARIANTS).sort().join(","), "fivecard,holdem,omaha,sevenstud");
@@ -105,10 +105,4 @@ test("ROW_LAYOUTS sums to its key", () => {
     const sum = layout.reduce((a, b) => a + b, 0);
     assert.equal(sum, Number(n), `ROW_LAYOUTS[${n}] should sum to ${n}`);
   }
-});
-
-// ---------- constants ----------
-
-test("TOSSUP_BAND is the documented ±1pp window", () => {
-  assert.equal(TOSSUP_BAND, 0.01);
 });

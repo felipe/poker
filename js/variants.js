@@ -71,7 +71,3 @@ export function maxPlayersForVariant(key) {
   const maxOpponents = Math.floor((52 - v.hole - v.board) / v.hole);
   return Math.min(10, 1 + maxOpponents);
 }
-
-// Equity within this band of the fair-share threshold counts as a TOSS-UP —
-// either decision is reasonable, so we don't second-guess the user.
-export const TOSSUP_BAND = 0.01; // ±1 percentage point

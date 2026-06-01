@@ -2,9 +2,10 @@
 // Entry point — DOM refs, state, flow, and event wiring.
 
 import { makeDeck, shuffle } from "./evaluator.js";
-import { VARIANTS, maxPlayersForVariant, TOSSUP_BAND } from "./variants.js";
+import { VARIANTS, maxPlayersForVariant } from "./variants.js";
+import { verdictFor } from "./verdict.js";
 import { simulate } from "./simulate.js";
-import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation } from "./ui.js";
+import { renderCardsInto, renderBreakdown, renderTrajectory, renderExplanation, escapeHtml } from "./ui.js";
 import { streetSummary } from "./explain.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
@@ -226,18 +227,12 @@ async function handleCall(userChoice) {
     return;
   }
   const { winRate } = simulate(userSnap, boardSnap, numPlayers - 1, variantKey, 10000);
-  const verdict = Math.abs(winRate - threshold) <= TOSSUP_BAND
-    ? { text: "TOSS-UP", cls: "tossup" }
-    : winRate > threshold
-      ? { text: "PLAY", cls: "play" }
-      : { text: "FOLD", cls: "fold" };
+  const verdict = verdictFor(winRate, threshold);
 
   advanceStreet();
   renderHand();
   const pct = (winRate * 100).toFixed(0);
   const reason = streetSummary({ userCards: userSnap, boardCards: boardSnap, variant: variantKey });
-  const escapeHtml = /** @param {string} s */ s => s
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   statusEl.innerHTML =
     `<div class="math-note">${playedStreet.label}: math said ` +
     `<span class="verdict ${verdict.cls}">${verdict.text}</span>` +
@@ -291,25 +286,13 @@ async function runSimulationAndRender() {
   });
   const final = trajectory[trajectory.length - 1];
   const winRate = final.winRate;
-
-  /** @type {string} */ let verdictText;
-  /** @type {string} */ let verdictClass;
-  if (Math.abs(winRate - threshold) <= TOSSUP_BAND) {
-    verdictText = "TOSS-UP";
-    verdictClass = "tossup";
-  } else if (winRate > threshold) {
-    verdictText = "PLAY";
-    verdictClass = "play";
-  } else {
-    verdictText = "FOLD";
-    verdictClass = "fold";
-  }
+  const verdict = verdictFor(winRate, threshold);
 
   winPctEl.textContent = (winRate * 100).toFixed(1) + "%";
   thresholdEl.textContent = (threshold * 100).toFixed(1) + "%";
   thresholdLabelEl.textContent = `Fair share (1 of ${numPlayers})`;
-  verdictEl.textContent = verdictText;
-  verdictEl.className = "result-val verdict " + verdictClass;
+  verdictEl.textContent = verdict.text;
+  verdictEl.className = "result-val verdict " + verdict.cls;
   renderBreakdown(breakdownEl, final.distribution, variant, final.user, final.board);
   renderExplanation(explanationEl, { trajectory, numPlayers, variant });
   renderTrajectory(trajectoryEl, trajectory, threshold);

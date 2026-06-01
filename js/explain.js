@@ -177,35 +177,6 @@ function threatNoun(oppCat, userCat) {
   return "";
 }
 
-/**
- * Pot-odds verdict insert. Given the user's equity and the size of the call
- * relative to the pot, returns one sentence the verdict prose can splice in.
- * Returns null when no pot context is supplied (free play has no pot model;
- * quiz mode and hand-history replay will eventually pass one through).
- *
- * The threshold is the break-even point: equity needed = call / (pot + call).
- * Above that you're getting the price; below it you're not.
- *
- * @param {Object} ctx
- * @param {number} ctx.equity                  0..1, the user's win probability
- * @param {{ size: number, callAmount: number }} [ctx.pot]
- * @returns {string|null}
- */
-export function potOdds(ctx) {
-  if (!ctx.pot) return null;
-  const { size, callAmount } = ctx.pot;
-  if (!Number.isFinite(size) || !Number.isFinite(callAmount)) return null;
-  if (size <= 0 || callAmount <= 0) return null;
-  if (!Number.isFinite(ctx.equity) || ctx.equity < 0 || ctx.equity > 1) return null;
-  const required = callAmount / (size + callAmount);
-  const equityPct = Math.round(ctx.equity * 100);
-  const requiredPct = Math.round(required * 100);
-  const gettingPrice = ctx.equity >= required;
-  const verdict = gettingPrice ? "PLAY" : "FOLD";
-  const tail = gettingPrice ? "so you're getting the price" : "so you're not getting the price";
-  return `Math says ${verdict} at ${equityPct}% equity — you need ${requiredPct}% to call, ${tail}.`;
-}
-
 /** @param {number} n */
 function playerCountLine(n) {
   if (n === 2) return "Heads-up, weaker hands gain value — fewer ways for an opponent to have you beat.";
