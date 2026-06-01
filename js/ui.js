@@ -8,6 +8,16 @@ import { explainTrajectory, recapHand, betterHandsCallout } from "./explain.js";
 /** @typedef {import("./evaluator.js").Card} Card */
 
 /**
+ * Escape a string for safe interpolation into innerHTML. The single canonical
+ * HTML-escape for the whole app — both this module and the flow layer use it
+ * rather than each re-deriving the replace chain.
+ * @param {string} s
+ */
+export function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
  * Render an array of cards (or `placeholderCount` outlines if `cards` is empty)
  * into `target`. Cards are grouped into rows by `rowLayout`.
  *
@@ -65,9 +75,6 @@ export function renderCardsInto(target, cards, placeholderCount) {
  * @param {string} params.variant
  */
 export function renderExplanation(target, params) {
-  const escape = /** @param {string} s */ s => s
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
   /** @type {string[]} */
   const blocks = [];
   // Group the recap and the threats table into a single "summary" block so
@@ -76,12 +83,12 @@ export function renderExplanation(target, params) {
   /** @type {string[]} */
   const summary = [];
   const recap = recapHand(params);
-  if (recap) summary.push(`<p class="recap">${escape(recap)}</p>`);
+  if (recap) summary.push(`<p class="recap">${escapeHtml(recap)}</p>`);
   const threats = betterHandsCallout(params);
-  if (threats) summary.push(threatsTable(threats.items, escape));
+  if (threats) summary.push(threatsTable(threats.items));
   if (summary.length) blocks.push(`<div class="summary">${summary.join("")}</div>`);
 
-  for (const p of explainTrajectory(params)) blocks.push(`<p>${escape(p)}</p>`);
+  for (const p of explainTrajectory(params)) blocks.push(`<p>${escapeHtml(p)}</p>`);
   target.innerHTML = blocks.join("");
 }
 
@@ -93,15 +100,14 @@ export function renderExplanation(target, params) {
  * visually grouped with the recap above the per-street prose.
  *
  * @param {Array<{noun: string, p: number, pct: number}>} items
- * @param {(s: string) => string} escape
  */
-function threatsTable(items, escape) {
+function threatsTable(items) {
   const rows = items.map(({ noun, pct }) => {
     // The bar fill is the raw percentage with a 2% floor so 1% threats are
     // still visible. Matches what renderBreakdown does for its own bars.
     const w = Math.max(pct, 2);
     return `<div class="bar-row">
-      <span class="bar-name">${escape(noun)}</span>
+      <span class="bar-name">${escapeHtml(noun)}</span>
       <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
       <span class="bar-pct">${pct}%</span>
     </div>`;
