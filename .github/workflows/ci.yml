@@ -1,0 +1,30 @@
+# Runs the pre-merge gate on every PR and every push to main.
+#
+# The single source of truth for what "passing" means is .pre-merge.yml; this
+# workflow runs that manifest's `unit` stage command. There's no build step and
+# no dependencies — the tests use Node's built-in runner — so the job is just
+# "check out, pick the pinned Node, run the tests".
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch/PR cancels the in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Stay in lockstep with the version the project pins for the runner.
+          node-version-file: .nvmrc
+      # Mirrors the `unit` stage command in .pre-merge.yml.
+      - run: node --test test/*.test.js
