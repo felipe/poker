@@ -26,6 +26,31 @@ export function escapeHtml(s) {
 }
 
 /**
+ * Build a single face-up card element — the standard `.card` with its rank+suit
+ * in the corners and a large center pip. This is the one place card markup is
+ * defined, so every surface (the hand, the board, and reference tables) renders
+ * a card identically. Reuse it rather than re-stating the markup.
+ *
+ * @param {Card} card
+ * @returns {HTMLDivElement}
+ */
+export function cardEl(card) {
+  const div = document.createElement("div");
+  div.className = "card " + SUIT_COLOR[SUITS[card.suit]];
+  const r = rankToStr(card.rank);
+  const s = SUIT_GLYPH[SUITS[card.suit]];
+  div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
+  return div;
+}
+
+/** Build a face-down placeholder (outline) card. @returns {HTMLDivElement} */
+function placeholderEl() {
+  const div = document.createElement("div");
+  div.className = "card placeholder";
+  return div;
+}
+
+/**
  * Render an array of cards (or `placeholderCount` outlines if `cards` is empty)
  * into `target`. Cards are grouped into rows by `rowLayout`.
  *
@@ -44,19 +69,7 @@ export function renderCardsInto(target, cards, placeholderCount) {
     const row = document.createElement("div");
     row.className = "card-row";
     for (let i = 0; i < rowSize; i++) {
-      if (empty) {
-        const ph = document.createElement("div");
-        ph.className = "card placeholder";
-        row.appendChild(ph);
-      } else {
-        const c = cards[idx++];
-        const div = document.createElement("div");
-        div.className = "card " + SUIT_COLOR[SUITS[c.suit]];
-        const r = rankToStr(c.rank);
-        const s = SUIT_GLYPH[SUITS[c.suit]];
-        div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
-        row.appendChild(div);
-      }
+      row.appendChild(empty ? placeholderEl() : cardEl(cards[idx++]));
     }
     target.appendChild(row);
   }
