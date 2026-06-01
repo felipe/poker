@@ -428,3 +428,39 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding-right: 28px;
   padding-bottom: 4px;
 }
+
+/* ---------- Stats (decision calibration) ----------
+   Uses theme vars with neutral fallbacks so it degrades gracefully on the
+   designer themes, which don't define a rule for these classes. */
+.stats {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+}
+.stats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.stats-head > span { font-weight: 600; }
+.stats-reset {
+  background: none;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.4));
+  color: inherit;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.stats-reset:hover { border-color: var(--accent, currentColor); }
+.stats-summary {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted, inherit);
+}
+.stats-summary .stats-main { color: var(--ink, inherit); }
+.stats-summary strong { font-variant-numeric: tabular-nums; }
+.stats-lean { margin-top: 2px; }

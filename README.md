@@ -95,6 +95,10 @@ Equity > 1 ÷ playercount is the "play" line — you're getting more than your s
 
 On a non-final Play (Hold'em flop/turn/river, Stud 4th–6th street), a quick sim runs at the current state and the status line reports `<street>: math said PLAY / FOLD / TOSS-UP (XX% win chance)` so you can tell whether you went with or against the math, and by how much, before the next street is dealt. The full result panel (with the equity-by-street chart and hand-category breakdown) still waits until the hand actually resolves.
 
+### Decision calibration stats
+
+Each completed hand records your terminal decision (play to showdown, or fold) against the math's verdict at that point. The Settings panel surfaces a running summary — how often you agreed with the math, and whether you lean *tight* (folding hands it would play) or *loose* (playing hands it would fold) — with a Reset button. Stored in `localStorage`, strictly on-device: nothing here is designed to sync or leave the browser. A TOSS-UP always counts as agreement (either call is fine).
+
 ## Project layout
 
 ```
@@ -105,8 +109,11 @@ css/
 js/
   main.js              DOM refs, state, flow, event wiring (entry)
   evaluator.js         card model, deck, shuffle, hand evaluators, scoreFor
-  variants.js          VARIANTS, row layouts, player cap, toss-up band
+  variants.js          VARIANTS, row layouts, player cap
+  verdict.js           play/fold/toss-up decision model (verdictFor, TOSSUP_BAND)
   simulate.js          Monte Carlo simulator
+  analysis.js          pure hand analysis: simulate + derive verdict (DOM-free)
+  stats.js             on-device decision-calibration stats (DOM-free)
   ui.js                pure DOM helpers: card / breakdown / trajectory render
   explain.js           prose facade: snapshot / trajectory / recap / threats dispatch
   explain/
@@ -191,7 +198,7 @@ For a standard "best 5 of hole+board" variant, the simulator and evaluator pick 
 
 ## Tests
 
-Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simulate.js`, `explain.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
+Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `verdict.js`, `simulate.js`, `analysis.js`, `stats.js`, `explain.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step.
 
 ```sh
 node --test test/*.test.js
@@ -204,6 +211,9 @@ Coverage:
 - `test/variants.test.js` — VARIANTS shape, `maxPlayersForVariant` deck math, `rowLayout` for each card count.
 - `test/simulate.test.js` — statistical sanity bounds on the Monte Carlo simulator (pocket aces beat 7-2, equity drops with more opponents, made flush ≈ 90% on the river, the pedagogical "four aces is mediocre in Omaha" case, etc.). Uses 5,000 iterations and ±5 percentage-point thresholds to stay flake-free.
 - `test/explain.test.js` — golden-output suites pinning the explainer prose across variants, plus the better-hands threat callout (including the Omaha-rule boundary, so the prose never claims a flush the rule forbids).
+- `test/verdict.test.js` — the play/fold/toss-up decision model and the ±1pp band boundary.
+- `test/analysis.test.js` — pure hand analysis (street + full-hand), verdict derivation, and the empty-history guard.
+- `test/stats.test.js` — decision recording, agreement/bias classification, summary rollup, and storage round-trip (with an in-memory stub).
 
 The UI / DOM layer (`ui.js`, `main.js`) is not unit-tested — that path is covered by manual verification below.
 
