@@ -93,11 +93,40 @@ export function loadStats(storage) {
   try {
     const raw = storage.getItem(STATS_KEY);
     if (!raw) return emptyStats();
-    const parsed = JSON.parse(raw);
-    return { ...emptyStats(), ...parsed, byVariant: { ...(parsed && parsed.byVariant) } };
+    return normalizeStats(JSON.parse(raw));
   } catch (_) {
     return emptyStats();
   }
+}
+
+/** Coerce any value to a non-negative integer count (0 for junk). @param {unknown} v */
+function toCount(v) {
+  return typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+
+/**
+ * Coerce a parsed payload onto the Stats shape with numeric counters. Guards
+ * against a corrupt/tampered/old store: a valid-JSON-but-wrong-typed payload
+ * (e.g. string counters) would otherwise string-concatenate in recordHand and
+ * reach the renderer. Unknown fields are dropped; missing ones default to 0.
+ * @param {unknown} parsed
+ * @returns {Stats}
+ */
+function normalizeStats(parsed) {
+  const stats = emptyStats();
+  if (!parsed || typeof parsed !== "object") return stats;
+  const p = /** @type {Record<string, unknown>} */ (parsed);
+  stats.hands = toCount(p.hands);
+  stats.agreements = toCount(p.agreements);
+  stats.foldWhenPlay = toCount(p.foldWhenPlay);
+  stats.playWhenFold = toCount(p.playWhenFold);
+  if (p.byVariant && typeof p.byVariant === "object") {
+    for (const [key, value] of Object.entries(p.byVariant)) {
+      const n = toCount(value);
+      if (n > 0) stats.byVariant[String(key)] = n;
+    }
+  }
+  return stats;
 }
 
 /**

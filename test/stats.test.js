@@ -98,6 +98,34 @@ test("loadStats merges old payloads onto the current shape (forward-compatible)"
   assert.equal(s.foldWhenPlay, 0);
 });
 
+test("loadStats coerces a tampered / wrong-typed payload to safe numbers", () => {
+  const tampered = {
+    getItem: () => JSON.stringify({
+      hands: "5",                                   // string → 0
+      agreements: "<img src=x onerror=alert(1)>",   // string → 0 (never reaches innerHTML)
+      foldWhenPlay: -3,                             // negative → 0
+      playWhenFold: 2.9,                            // float → floored to 2
+      byVariant: { holdem: "9", omaha: -1 },        // non-positive / non-number → dropped
+    }),
+    setItem: () => {},
+  };
+  const s = loadStats(tampered);
+  assert.equal(s.hands, 0);
+  assert.equal(s.agreements, 0);
+  assert.equal(s.foldWhenPlay, 0);
+  assert.equal(s.playWhenFold, 2);
+  assert.deepEqual(s.byVariant, {});
+  for (const k of ["hands", "agreements", "foldWhenPlay", "playWhenFold"]) {
+    assert.equal(typeof s[k], "number", `${k} must be a number`);
+  }
+});
+
+test("loadStats treats a non-object payload as empty", () => {
+  assert.deepEqual(loadStats({ getItem: () => "42", setItem() {} }), emptyStats());
+  assert.deepEqual(loadStats({ getItem: () => "null", setItem() {} }), emptyStats());
+  assert.deepEqual(loadStats({ getItem: () => "[1,2]", setItem() {} }), emptyStats());
+});
+
 test("recordAndSave round-trips through storage", () => {
   const store = fakeStorage();
   recordAndSave(store, { variant: "holdem", choice: "play", verdict: "PLAY" });
