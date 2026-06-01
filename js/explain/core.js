@@ -3,7 +3,7 @@
 // the variant-aware hand category, and a couple of formatting helpers. No
 // variant-specific narrative lives here — that's holdem.js / omaha.js / draw.js.
 
-import { evaluate, evaluateOmaha, CATEGORY_DIVISOR } from "../evaluator.js";
+import { evaluate, scoreFor, CATEGORY_DIVISOR } from "../evaluator.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
 
@@ -48,20 +48,18 @@ export function categoryOf(cards) {
 }
 
 /**
- * Hand category (0..8) under the rules of a given variant. This is the single
- * place that owns *which evaluator a variant uses*: Hold'em, 5-Card Draw and
- * 7-Stud are "best 5 of hole+board"; Omaha is the exactly-2-hole + exactly-3-
- * board rule. Routing every prose path and the simulator through this means
- * they can't silently disagree (e.g. the prose calling a hand a flush that the
- * Omaha rule disallows).
+ * Hand category (0..8) under the rules of a given variant — the bucketed form
+ * of `scoreFor`. The variant→evaluator decision itself lives in `scoreFor`
+ * (evaluator.js), so the prose category and the simulator's raw score can't
+ * disagree on the rule (e.g. the prose calling a hand a flush that the Omaha
+ * rule disallows).
  *
  * @param {string} variant
  * @param {Card[]} hole
  * @param {Card[]} board
  */
 export function categoryFor(variant, hole, board) {
-  if (variant === "omaha") return Math.floor(evaluateOmaha(hole, board) / CATEGORY_DIVISOR);
-  return categoryOf(hole.concat(board));
+  return Math.floor(scoreFor(variant, hole, board) / CATEGORY_DIVISOR);
 }
 
 /** @param {string} s */

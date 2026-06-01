@@ -2,7 +2,7 @@
 // Monte Carlo simulator: deals out the remaining cards repeatedly and
 // reports win rate + a distribution of final hand categories.
 
-import { makeDeck, evaluate, evaluateOmaha, CATEGORY_DIVISOR } from "./evaluator.js";
+import { makeDeck, scoreFor, CATEGORY_DIVISOR } from "./evaluator.js";
 import { VARIANTS } from "./variants.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
@@ -78,12 +78,10 @@ export function simulate(userRevealed, boardRevealed, numOpponents, variant, ite
     const boardMore = remaining.slice(ptr, ptr + boardExtra); ptr += boardExtra;
     const fullBoard = boardRevealed.concat(boardMore);
     const userHole = userRevealed.concat(userMore);
-    // Omaha enforces "exactly 2 hole + exactly 3 board" at showdown — call
-    // the dedicated evaluator. Hold'em and the stud variants are "best 5 of
-    // hole+board", which evaluate handles directly.
-    const userScore = variant === "omaha"
-      ? evaluateOmaha(userHole, fullBoard)
-      : evaluate(userHole.concat(fullBoard));
+    // scoreFor owns the per-variant rule (Omaha's "exactly 2 hole + 3 board"
+    // vs. best-5 for everything else), so the simulator and the prose layer
+    // can't drift apart on it.
+    const userScore = scoreFor(variant, userHole, fullBoard);
     distribution[Math.floor(userScore / CATEGORY_DIVISOR)]++;
 
     // Iterate every opponent so we can find the strongest beating hand for
@@ -94,9 +92,7 @@ export function simulate(userRevealed, boardRevealed, numOpponents, variant, ite
     let tiedWithUser = 0;
     for (let o = 0; o < numOpponents; o++) {
       const opp = remaining.slice(ptr + o * oppCards, ptr + (o + 1) * oppCards);
-      const oppScore = variant === "omaha"
-        ? evaluateOmaha(opp, fullBoard)
-        : evaluate(opp.concat(fullBoard));
+      const oppScore = scoreFor(variant, opp, fullBoard);
       if (oppScore > bestOppScore) bestOppScore = oppScore;
       if (oppScore === userScore) tiedWithUser++;
     }
