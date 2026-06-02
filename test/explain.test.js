@@ -45,25 +45,25 @@ function golden(name, setup, expected) {
 // --- Hold'em pre-flop -------------------------------------------------
 
 golden("AA pre-flop", { user: ["As", "Ah"], board: [], variant: "holdem" },
-  "Pocket aces — the strongest starting hand in Hold'em.");
+  "Pocket aces — the strongest starting hand in the game, just don't slow-play into a multiway mess.");
 
 golden("KK pre-flop", { user: ["Ks", "Kh"], board: [], variant: "holdem" },
   "Pocket kings — second only to aces, with an ace on the flop the only real nightmare.");
 
 golden("QQ pre-flop", { user: ["Qs", "Qh"], board: [], variant: "holdem" },
-  "Pocket queens — premium, but you'll sweat every ace or king that comes.");
+  "Pocket queens — a top-tier pair, just wary of the ace or king that flops.");
 
 golden("JJ pre-flop", { user: ["Js", "Jh"], board: [], variant: "holdem" },
   "Pocket jacks — strong, but any overcard on the flop chips at your confidence.");
 
 golden("88 pre-flop", { user: ["8s", "8h"], board: [], variant: "holdem" },
-  "Pocket eights — a solid middle pair, ahead of most random hands but easily outflopped.");
+  "Pocket eights — a decent middle pair, usually best preflop but often awkward after it.");
 
 golden("55 pre-flop", { user: ["5s", "5h"], board: [], variant: "holdem" },
-  "Pocket fives — a small pair. Usually you need to flop a set or fold to action on overcards.");
+  "Pocket fives — a small pair. Without a set, fold to action on overcards.");
 
 golden("AKs pre-flop", { user: ["As", "Ks"], board: [], variant: "holdem" },
-  "Ace-king suited — premium. Flops top pair often and has both flush and straight potential.");
+  "Ace-king suited — a premium holding, flopping top pair often with flush potential behind it.");
 
 golden("AKo pre-flop", { user: ["As", "Kh"], board: [], variant: "holdem" },
   "Ace-king off-suit — premium high-card hand, but you usually need to pair to win the pot.");
@@ -72,31 +72,31 @@ golden("AQs pre-flop", { user: ["As", "Qs"], board: [], variant: "holdem" },
   "Ace-queen suited — strong, with flush potential backing up the high cards.");
 
 golden("AJo pre-flop", { user: ["As", "Jh"], board: [], variant: "holdem" },
-  "Ace-jack off-suit — solid, but dominated by ace-king and bigger pairs.");
+  "Ace-jack off-suit — a fair high-card hand, often behind a better ace.");
 
 golden("A4s pre-flop", { user: ["As", "4s"], board: [], variant: "holdem" },
-  "A suited ace with a weak kicker — playable for the nut-flush potential, but the kicker often costs you the pot.");
+  "A suited ace with a weak kicker — the nut-flush upside is the draw here, but the kicker bleeds chips.");
 
 golden("A4o pre-flop", { user: ["As", "4h"], board: [], variant: "holdem" },
-  "An ace with a weak off-suit kicker — easily dominated, especially in a multiway pot.");
+  "An ace with a weak off-suit kicker — thin, and frequently dominated by a better ace.");
 
 golden("KQs pre-flop", { user: ["Ks", "Qs"], board: [], variant: "holdem" },
-  "Suited broadway — flops top pair often and has straight and flush potential.");
+  "Suited broadway — a smooth suited hand with top-pair, straight, and flush upside.");
 
 golden("KJo pre-flop", { user: ["Ks", "Jh"], board: [], variant: "holdem" },
   "Broadway off-suit — decent, but vulnerable to bigger pairs and ace-high hands.");
 
 golden("76s pre-flop", { user: ["7s", "6s"], board: [], variant: "holdem" },
-  "Suited connectors — speculative. You're playing for straights, flushes, and the occasional surprise two pair.");
+  "Suited connectors — speculative. Great implied odds when they connect, easy to fold when they miss.");
 
 golden("T9o pre-flop", { user: ["Ts", "9h"], board: [], variant: "holdem" },
   "Off-suit connectors — speculative. Plays for straights, but easily dominated.");
 
 golden("72o pre-flop", { user: ["7c", "2d"], board: [], variant: "holdem" },
-  "Seven-deuce off-suit — the textbook worst starting hand in the game.");
+  "Seven-deuce off-suit — the textbook worst starting hand; there's a reason it's the punchline.");
 
 golden("J3o pre-flop", { user: ["Jh", "3d"], board: [], variant: "holdem" },
-  "A marginal off-suit hand — needs a friendly flop to be worth more than fold equity.");
+  "A marginal off-suit hand — a weak holding that needs the board's help to matter.");
 
 // --- Hold'em post-flop ------------------------------------------------
 
@@ -478,13 +478,14 @@ test("invariant: every seed stays within the length budget", () => {
   }
 });
 
-// The whole point of #39: a converted made-hand surface must actually vary its
-// surface form across sessions. These fixtures all flow through holdemMadeHand
-// (the converted surface), so each must yield several distinct renderings over
-// the seed sweep — proving the grammar isn't collapsing to one string.
-test("variation: converted made-hand surfaces produce multiple distinct forms", () => {
-  const MADE_FIXTURES = STRUCTURAL_FIXTURES.filter(f => f.board.length > 0);
-  for (const f of MADE_FIXTURES) {
+// The whole point of #39: a converted surface must actually vary its surface
+// form across sessions. Every Hold'em fixture here flows through a converted
+// producer (pre-flop read or made-hand read), so each must yield several
+// distinct renderings over the seed sweep — proving the grammar isn't
+// collapsing to one string.
+test("variation: converted Hold'em surfaces produce multiple distinct forms", () => {
+  const CONVERTED = STRUCTURAL_FIXTURES.filter(f => f.variant === "holdem");
+  for (const f of CONVERTED) {
     const forms = new Set(SEEDS.map(seed => proseAtSeed(f, seed)));
     assert.ok(forms.size >= 3,
       `${f.name}: only ${forms.size} distinct form(s) across ${SEEDS.length} seeds — not varying`);

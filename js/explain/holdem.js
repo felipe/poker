@@ -114,6 +114,129 @@ const MADE_TAILS = {
   ],
 };
 
+// Editorial tails for the pre-flop read, same fixed-core/varied-tail rule. The
+// equity-anchored lean tokens the simulator cross-checks assert — "the
+// strongest starting hand", "textbook worst", "premium", "second only to aces"
+// — appear in EVERY variant of their branch, so the claim stays true and
+// testable however the line is phrased. No tail carries its own em-dash (the
+// core already provides one).
+const PREFLOP_TAILS = {
+  aces: [
+    "the strongest starting hand in Hold'em.",
+    "the strongest starting hand in Hold'em; nothing's ahead of you.",
+    "the strongest starting hand there is. Raise and build the pot.",
+    "the strongest starting hand in the game, just don't slow-play into a multiway mess.",
+  ],
+  kings: [
+    "second only to aces, with an ace on the flop the only real nightmare.",
+    "second only to aces; an ace on the flop is the one card you fear.",
+    "second only to aces, premium, but every ace that flops stings.",
+    "second only to aces. Re-raise and play it fast.",
+  ],
+  queens: [
+    "premium, but you'll sweat every ace or king that comes.",
+    "a premium pair, though overcards on the flop will test your nerve.",
+    "premium; strong, but an ace or king overhead is always a worry.",
+    "a top-tier pair, just wary of the ace or king that flops.",
+  ],
+  jacks: [
+    "strong, but any overcard on the flop chips at your confidence.",
+    "a strong pair, though overcards on the flop are a constant worry.",
+    "strong; you'd love a jack-high flop and dread anything bigger.",
+    "powerful, but overcards make it a tricky hand to play.",
+  ],
+  midPair: [
+    "a solid middle pair, ahead of most random hands but easily outflopped.",
+    "a decent middle pair, usually best preflop but often awkward after it.",
+    "a middling pair; you're ahead now, but overcards will come.",
+    "playable, ahead of random hands but vulnerable once bigger cards land.",
+  ],
+  smallPair: [
+    "a small pair. Usually you need to flop a set or fold to action on overcards.",
+    "a small pair, so set-mine cheaply or fold to action on overcards.",
+    "a speculative small pair; flop a set or let it go to overcards.",
+    "a small pair. Without a set, fold to action on overcards.",
+  ],
+  aceKingSuited: [
+    "premium. Flops top pair often and has both flush and straight potential.",
+    "premium; big-card strength plus flush and straight upside.",
+    "a premium holding, flopping top pair often with flush potential behind it.",
+    "premium, pairing to a strong top pair with the suit to back it up.",
+  ],
+  aceKingOff: [
+    "premium high-card hand, but you usually need to pair to win the pot.",
+    "a premium high-card hand; you'll usually need to pair up to win.",
+    "premium, though without a pair it's just ace-high at showdown.",
+    "premium high cards, but pairing the board is the usual path to the pot.",
+  ],
+  aceBroadwaySuited: [
+    "strong, with flush potential backing up the high cards.",
+    "a strong suited hand; the flush draw backs up two big cards.",
+    "strong, pairing well and carrying nut-flush upside.",
+    "a solid suited ace with real flush potential behind it.",
+  ],
+  aceBroadwayOff: [
+    "solid, but dominated by ace-king and bigger pairs.",
+    "decent, though ace-king and the big pairs have it beat.",
+    "playable, but wary of domination by stronger aces.",
+    "a fair high-card hand, often behind a better ace.",
+  ],
+  weakAceSuited: [
+    "playable for the nut-flush potential, but the kicker often costs you the pot.",
+    "worth a look for the nut-flush draw, though the weak kicker is a trap.",
+    "speculative; you're really playing the suit, not the ace.",
+    "the nut-flush upside is the draw here, but the kicker bleeds chips.",
+  ],
+  weakAceOff: [
+    "easily dominated, especially in a multiway pot.",
+    "a weak ace, often outkicked when it pairs.",
+    "trouble in a multiway pot; the kicker rarely holds up.",
+    "thin, and frequently dominated by a better ace.",
+  ],
+  broadwaySuited: [
+    "flops top pair often and has straight and flush potential.",
+    "strong; it makes top pair a lot and carries straight and flush outs.",
+    "a smooth suited hand with top-pair, straight, and flush upside.",
+    "playable and flexible, with both straight and flush potential.",
+  ],
+  broadwayOff: [
+    "decent, but vulnerable to bigger pairs and ace-high hands.",
+    "playable, though bigger pairs and stronger aces are ahead.",
+    "a fair high-card hand that wants a friendly flop.",
+    "okay, but easily second-best against premium holdings.",
+  ],
+  sevenDeuce: [
+    "the textbook worst starting hand in the game.",
+    "the textbook worst starting hand in poker. Fold and move on.",
+    "by reputation the textbook worst starting hand there is.",
+    "the textbook worst starting hand; there's a reason it's the punchline.",
+  ],
+  suitedConnectors: [
+    "speculative. You're playing for straights, flushes, and the occasional surprise two pair.",
+    "speculative, but they make straights and flushes and can flop big.",
+    "a fun speculative hand; you're drawing to straights and flushes.",
+    "speculative. Great implied odds when they connect, easy to fold when they miss.",
+  ],
+  suitedDisconnected: [
+    "the flush draw is the main reason to play; the straight is a long shot.",
+    "mostly a flush-draw hand, with little straight potential.",
+    "playable for the suit alone; the gap kills most straight chances.",
+    "the flush is the draw that matters here, not the straight.",
+  ],
+  offsuitConnectors: [
+    "speculative. Plays for straights, but easily dominated.",
+    "speculative; straight potential, but no suit to fall back on.",
+    "a marginal speculative hand, drawing thin to straights only.",
+    "playable for straights, though it's often dominated.",
+  ],
+  marginalOff: [
+    "needs a friendly flop to be worth more than fold equity.",
+    "wants a friendly flop; otherwise there's little here.",
+    "a weak holding that needs the board's help to matter.",
+    "thin, and only worth playing when the flop cooperates.",
+  ],
+};
+
 /**
  * Single-snapshot Hold'em read: made hand, then any draws and board threats.
  * @param {Card[]} user
@@ -411,49 +534,51 @@ function holdemPreflop(cards) {
   const [hi, lo] = cards[0].rank >= cards[1].rank ? cards : [cards[1], cards[0]];
   const suited = cards[0].suit === cards[1].suit;
   const gap = hi.rank - lo.rank;
+  const rng = rngFor(`holdem|preflop|${cardsKey(cards)}`);
+  const tail = key => pick(rng, PREFLOP_TAILS[key]);
 
   if (hi.rank === lo.rank) {
-    if (hi.rank === 14) return "Pocket aces — the strongest starting hand in Hold'em.";
-    if (hi.rank === 13) return "Pocket kings — second only to aces, with an ace on the flop the only real nightmare.";
-    if (hi.rank === 12) return "Pocket queens — premium, but you'll sweat every ace or king that comes.";
-    if (hi.rank === 11) return "Pocket jacks — strong, but any overcard on the flop chips at your confidence.";
-    if (hi.rank >= 8) return `Pocket ${rankPlural(hi.rank)} — a solid middle pair, ahead of most random hands but easily outflopped.`;
-    return `Pocket ${rankPlural(hi.rank)} — a small pair. Usually you need to flop a set or fold to action on overcards.`;
+    if (hi.rank === 14) return `Pocket aces — ${tail("aces")}`;
+    if (hi.rank === 13) return `Pocket kings — ${tail("kings")}`;
+    if (hi.rank === 12) return `Pocket queens — ${tail("queens")}`;
+    if (hi.rank === 11) return `Pocket jacks — ${tail("jacks")}`;
+    if (hi.rank >= 8) return `Pocket ${rankPlural(hi.rank)} — ${tail("midPair")}`;
+    return `Pocket ${rankPlural(hi.rank)} — ${tail("smallPair")}`;
   }
 
   if (hi.rank === 14 && lo.rank === 13) {
     return suited
-      ? "Ace-king suited — premium. Flops top pair often and has both flush and straight potential."
-      : "Ace-king off-suit — premium high-card hand, but you usually need to pair to win the pot.";
+      ? `Ace-king suited — ${tail("aceKingSuited")}`
+      : `Ace-king off-suit — ${tail("aceKingOff")}`;
   }
   if (hi.rank === 14 && lo.rank >= 11) {
     return suited
-      ? `Ace-${rankName(lo.rank)} suited — strong, with flush potential backing up the high cards.`
-      : `Ace-${rankName(lo.rank)} off-suit — solid, but dominated by ace-king and bigger pairs.`;
+      ? `Ace-${rankName(lo.rank)} suited — ${tail("aceBroadwaySuited")}`
+      : `Ace-${rankName(lo.rank)} off-suit — ${tail("aceBroadwayOff")}`;
   }
   if (hi.rank === 14) {
     return suited
-      ? "A suited ace with a weak kicker — playable for the nut-flush potential, but the kicker often costs you the pot."
-      : "An ace with a weak off-suit kicker — easily dominated, especially in a multiway pot.";
+      ? `A suited ace with a weak kicker — ${tail("weakAceSuited")}`
+      : `An ace with a weak off-suit kicker — ${tail("weakAceOff")}`;
   }
   if (hi.rank >= 12 && lo.rank >= 10) {
     return suited
-      ? "Suited broadway — flops top pair often and has straight and flush potential."
-      : "Broadway off-suit — decent, but vulnerable to bigger pairs and ace-high hands.";
+      ? `Suited broadway — ${tail("broadwaySuited")}`
+      : `Broadway off-suit — ${tail("broadwayOff")}`;
   }
   if (hi.rank === 7 && lo.rank === 2 && !suited) {
-    return "Seven-deuce off-suit — the textbook worst starting hand in the game.";
+    return `Seven-deuce off-suit — ${tail("sevenDeuce")}`;
   }
   if (suited && gap <= 2) {
-    return "Suited connectors — speculative. You're playing for straights, flushes, and the occasional surprise two pair.";
+    return `Suited connectors — ${tail("suitedConnectors")}`;
   }
   if (suited) {
-    return "Suited but disconnected — the flush draw is the main reason to play; the straight is a long shot.";
+    return `Suited but disconnected — ${tail("suitedDisconnected")}`;
   }
   if (gap <= 2 && hi.rank <= 10) {
-    return "Off-suit connectors — speculative. Plays for straights, but easily dominated.";
+    return `Off-suit connectors — ${tail("offsuitConnectors")}`;
   }
-  return "A marginal off-suit hand — needs a friendly flop to be worth more than fold equity.";
+  return `A marginal off-suit hand — ${tail("marginalOff")}`;
 }
 
 /* ---------- Hold'em post-flop ---------- */
