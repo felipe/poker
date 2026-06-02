@@ -626,7 +626,9 @@ test("recap: roughly-flat equity case uses 'steady' framing", () => {
   ];
   const recap = recapHand({ trajectory, variant: "holdem" });
   assert.ok(recap);
-  assert.match(recap, /roughly steady/);
+  // The "flat equity" lead varies; any of its phrasings is acceptable.
+  assert.match(recap, /roughly steady|barely moved|roughly flat|little in your equity changed/i);
+  assert.match(recap, /\(40% → 39%\)/);
 });
 
 test("recap: returns null when there's no trajectory to synthesize", () => {

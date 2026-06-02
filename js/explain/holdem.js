@@ -287,6 +287,30 @@ const THREAT_FRAGS = {
   ],
 };
 
+// Whole-hand recap: the equity figures, the final-hand noun phrase, and the
+// "biggest drop was on the [street]" clause are factual anchors and stay fixed;
+// only the closing editorial moral varies.
+const RECAP_FRAGS = {
+  climbedTail: [
+    "the board helped you more than it helped opponents.",
+    "the runout favored your hand over the field.",
+    "the board kept breaking your way.",
+    "each street helped you more than your opponents.",
+  ],
+  fellTail: [
+    "Made hands can mislead — every card on the board that helps you can help opponents more.",
+    "A made hand can deceive: the same cards that help you often help opponents more.",
+    "Strength on paper isn't strength at showdown — the board helps everyone.",
+    "Made hands can lull you; every helpful card can help the field more.",
+  ],
+  steady: [
+    "Your equity stayed roughly steady",
+    "Your equity barely moved",
+    "Your equity held roughly flat",
+    "Little in your equity changed",
+  ],
+};
+
 /**
  * Single-snapshot Hold'em read: made hand, then any draws and board threats.
  * @param {Card[]} user
@@ -330,28 +354,56 @@ export function holdemTrajectoryParagraphs(history) {
     const lower = s.label.toLowerCase();
     /** @type {string[]} */
     const parts = [];
+    const rng = rngFor(`holdem|traj|${s.label}|${cardsKey(s.user)}|${cardsKey(s.board)}`);
+    // Neutral "what you have now" lead, reused by the pre-flop→flop and the
+    // category-dropped branches. Splices the (already varied) made-hand line.
+    const neutral = () => pick(rng, [
+      `On the ${lower}, ${decap(state.madeLine)}`,
+      `By the ${lower}, ${decap(state.madeLine)}`,
+      `Come the ${lower}, ${decap(state.madeLine)}`,
+    ]);
 
     if (prev && prev.category === -1) {
       // Pre-flop → flop. Neutral lead — the flop is the first time we have a
       // made-hand category at all, so "helped" or "brick" both feel wrong.
-      parts.push(`On the ${lower}, ${decap(state.madeLine)}`);
+      parts.push(neutral());
     } else if (prev && state.category > prev.category) {
-      parts.push(`The ${lower} helped — ${decap(state.madeLine)}`);
+      parts.push(pick(rng, [
+        `The ${lower} helped — ${decap(state.madeLine)}`,
+        `The ${lower} improved things — ${decap(state.madeLine)}`,
+        `The ${lower} moved you up — ${decap(state.madeLine)}`,
+      ]));
     } else if (prev && state.madeLine === prev.madeLine) {
       // Same made hand. The interesting question is whether the board got
       // worse — new threats appearing means the hand was watered even though
       // its category didn't budge.
       if (state.threats && state.threats !== prev.threats) {
-        parts.push(`The ${lower} didn't improve your hand, but the board got worse for you.`);
+        parts.push(pick(rng, [
+          `The ${lower} didn't improve your hand, but the board got worse for you.`,
+          `The ${lower} didn't help your hand, and the board got more dangerous.`,
+          `Your hand didn't improve on the ${lower}, but the board got scarier.`,
+        ]));
       } else if (state.draws && state.draws !== prev.draws) {
-        parts.push(`The ${lower} didn't improve your hand, but you picked up a draw.`);
+        parts.push(pick(rng, [
+          `The ${lower} didn't improve your hand, but you picked up a draw.`,
+          `No improvement on the ${lower}, though you did pick up a draw.`,
+          `The ${lower} didn't change your made hand, but a draw appeared.`,
+        ]));
       } else if (prev.draws && !state.draws && s.board.length === 5) {
-        parts.push(`The ${lower} bricked — your draw didn't come in.`);
+        parts.push(pick(rng, [
+          `The ${lower} bricked — your draw didn't come in.`,
+          `The ${lower} bricked; the draw missed.`,
+          `Your draw missed on the ${lower}.`,
+        ]));
       } else {
-        parts.push(`The ${lower} was a brick — nothing changed.`);
+        parts.push(pick(rng, [
+          `The ${lower} was a brick — nothing changed.`,
+          `The ${lower} was a blank — nothing changed.`,
+          `Nothing changed on the ${lower}.`,
+        ]));
       }
     } else {
-      parts.push(`On the ${lower}, ${decap(state.madeLine)}`);
+      parts.push(neutral());
     }
 
     // New draws and threats since the previous street get their own sentences.
@@ -394,6 +446,7 @@ export function recapHand(ctx) {
   const endPct = Math.round(last.winRate * 100);
   const delta = last.winRate - first.winRate;
   const finalHand = describeFinalHand(last.user, last.board);
+  const rng = rngFor(`holdem|recap|${cardsKey(last.user)}|${cardsKey(last.board)}`);
 
   const SIG = 0.05;
 
@@ -406,7 +459,7 @@ export function recapHand(ctx) {
   }
 
   if (delta >= SIG) {
-    return `You ended with ${finalHand}, and your equity climbed from ${startPct}% to ${endPct}% along the way — the board helped you more than it helped opponents.`;
+    return `You ended with ${finalHand}, and your equity climbed from ${startPct}% to ${endPct}% along the way — ${pick(rng, RECAP_FRAGS.climbedTail)}`;
   }
 
   if (delta <= -SIG) {
@@ -422,10 +475,10 @@ export function recapHand(ctx) {
         why = ` The biggest single-street drop was on the ${dropStreet.label.toLowerCase()} (${dropPP} points).`;
       }
     }
-    return `You ended with ${finalHand}, but your equity fell from ${startPct}% to ${endPct}%.${why} Made hands can mislead — every card on the board that helps you can help opponents more.`;
+    return `You ended with ${finalHand}, but your equity fell from ${startPct}% to ${endPct}%.${why} ${pick(rng, RECAP_FRAGS.fellTail)}`;
   }
 
-  return `Your equity stayed roughly steady (${startPct}% → ${endPct}%), ending with ${finalHand}.`;
+  return `${pick(rng, RECAP_FRAGS.steady)} (${startPct}% → ${endPct}%), ending with ${finalHand}.`;
 }
 
 /**
