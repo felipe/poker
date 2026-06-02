@@ -15,8 +15,57 @@
 // specific straight-draw out counts are a follow-up.
 
 import { rankName, rankPlural, rankCounts, suitCounts, categoryFor, drawPctText } from "./core.js";
+import { rngFor, cardsKey, pick } from "../prose.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
+
+// Editorial tails for the Omaha made-hand read. Same rule as Hold'em: the
+// factual core — the category name and its Omaha-rule phrasing ("through the
+// Omaha rule", "played through 2 of your hole cards") — stays fixed, and only
+// the strength remark varies.
+const OMAHA_MADE = {
+  highLead: ["Nothing made yet", "No made hand yet", "Nothing's connected yet"],
+  onePair: [
+    "modest in Omaha, where hands run stronger than Hold'em.",
+    "weak in Omaha, where strong hands are the norm.",
+    "thin here; Omaha hands tend to run much bigger.",
+  ],
+  twoPair: [
+    "playable but vulnerable on a board this active.",
+    "decent, though Omaha boards get dangerous fast.",
+    "okay, but easily beaten on an active board.",
+  ],
+  trips: [
+    "strong, though full houses are common in Omaha.",
+    "strong, but boats show up often in Omaha.",
+    "a strong hand, wary that full houses are common here.",
+  ],
+  straight: [
+    "strong, but watch for higher straights and the flush.",
+    "strong; higher straights and flushes are the threats.",
+    "a strong hand, mindful of bigger straights and flushes.",
+  ],
+  flush: [
+    "strong. Higher flushes are the main worry.",
+    "strong; a higher flush is the main concern.",
+    "a powerful hand, with only higher flushes ahead.",
+  ],
+  fullHouse: [
+    "very strong in Omaha.",
+    "a big hand in Omaha.",
+    "very strong, though Omaha can bring bigger boats.",
+  ],
+  quads: [
+    "nearly a lock.",
+    "almost unbeatable.",
+    "a near-certain winner.",
+  ],
+  straightFlush: [
+    "the nuts.",
+    "unbeatable.",
+    "the best hand possible.",
+  ],
+};
 
 /**
  * Single-snapshot Omaha read. Evaluates the Omaha category once and threads it
@@ -29,7 +78,7 @@ import { rankName, rankPlural, rankCounts, suitCounts, categoryFor, drawPctText 
 export function omahaSnapshot(user, board) {
   if (board.length === 0) return omahaPreflop(user);
   const category = categoryFor("omaha", user, board);
-  const parts = [omahaMadeHand(category)];
+  const parts = [omahaMadeHand(category, user, board)];
   const draws = omahaDraws(user, board, category);
   if (draws) parts.push(draws);
   const threats = omahaBoardThreats(user, board, category);
@@ -39,6 +88,7 @@ export function omahaSnapshot(user, board) {
 
 /** @param {Card[]} hole */
 function omahaPreflop(hole) {
+  const rng = rngFor(`omaha|preflop|${cardsKey(hole)}`);
   const rc = rankCounts(hole);
   const sc = suitCounts(hole);
   // Pairs first — they anchor the hand.
@@ -51,10 +101,18 @@ function omahaPreflop(hole) {
   else if (suitMaxes[0] >= 2) suitedness = "single-suited";
 
   if (pairs.length >= 1 && pairs[0] >= 12) {
-    return `Big pocket pair — ${rankPlural(pairs[0])} in hand, ${suitedness}. A premium Omaha starter; you'll want to see flops where the rest of your hand can connect.`;
+    return `Big pocket pair — ${rankPlural(pairs[0])} in hand, ${suitedness}. ${pick(rng, [
+      "A premium Omaha starter; you'll want to see flops where the rest of your hand can connect.",
+      "A top Omaha holding — look for flops your side cards can build on.",
+      "Premium; the value comes when your other two cards connect too.",
+    ])}`;
   }
   if (pairs.length >= 1) {
-    return `Pocket pair of ${rankPlural(pairs[0])}, ${suitedness}. Middle Omaha hands depend on how the other two cards connect with the board.`;
+    return `Pocket pair of ${rankPlural(pairs[0])}, ${suitedness}. ${pick(rng, [
+      "Middle Omaha hands depend on how the other two cards connect with the board.",
+      "A middling Omaha hand; the side cards decide how playable it is.",
+      "Playable, but it leans on the other two cards connecting.",
+    ])}`;
   }
   // No pair — look at how the ranks span. Tight rundowns (4 consecutive) are
   // premium, gappers are weaker.
@@ -63,12 +121,24 @@ function omahaPreflop(hole) {
   const top = rankName(sortedRanks[0]);
   const cap = top.charAt(0).toUpperCase() + top.slice(1);
   if (span <= 3) {
-    return `${cap}-high rundown, ${suitedness}. Connected hands like this make a lot of straights and combo draws — Omaha's sweet spot.`;
+    return `${cap}-high rundown, ${suitedness}. ${pick(rng, [
+      "Connected hands like this make a lot of straights and combo draws — Omaha's sweet spot.",
+      "Tightly connected: lots of straights and combo draws, exactly what Omaha loves.",
+      "A premium connected hand, rich in straight and wrap potential.",
+    ])}`;
   }
   if (span <= 5) {
-    return `${cap}-high semi-connected, ${suitedness}. Some straight potential, but gaps cut your wrap chances.`;
+    return `${cap}-high semi-connected, ${suitedness}. ${pick(rng, [
+      "Some straight potential, but gaps cut your wrap chances.",
+      "Playable, though the gaps limit your wraps.",
+      "Moderate straight potential; the gaps hurt the big draws.",
+    ])}`;
   }
-  return `${cap}-high scattered, ${suitedness}. Hard to connect with the board cleanly — Omaha penalizes loose 4-card hands.`;
+  return `${cap}-high scattered, ${suitedness}. ${pick(rng, [
+    "Hard to connect with the board cleanly — Omaha penalizes loose 4-card hands.",
+    "Disjointed; Omaha punishes hands that don't work together.",
+    "Tough to flop well with — the four cards don't support each other.",
+  ])}`;
 }
 
 /**
@@ -79,17 +149,20 @@ function omahaPreflop(hole) {
  * remark per category.
  *
  * @param {number} category  0..8, from categoryFor("omaha", ...)
+ * @param {Card[]} user
+ * @param {Card[]} board
  */
-function omahaMadeHand(category) {
-  if (category === 0) return "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board.";
-  if (category === 1) return "Your best 2-hole + 3-board combo makes one pair — modest in Omaha, where hands run stronger than Hold'em.";
-  if (category === 2) return "Two pair through the Omaha rule — playable but vulnerable on a board this active.";
-  if (category === 3) return "Three of a kind under the Omaha rule — strong, though full houses are common in Omaha.";
-  if (category === 4) return "A straight, played through 2 of your hole cards — strong, but watch for higher straights and the flush.";
-  if (category === 5) return "A flush, played through 2 of your hole cards — strong. Higher flushes are the main worry.";
-  if (category === 6) return "A full house — very strong in Omaha.";
-  if (category === 7) return "Four of a kind under the Omaha rule — nearly a lock.";
-  return "A straight flush — the nuts.";
+function omahaMadeHand(category, user, board) {
+  const rng = rngFor(`omaha|made|${cardsKey(user)}|${cardsKey(board)}`);
+  if (category === 0) return `${pick(rng, OMAHA_MADE.highLead)} — high card only, using exactly 2 of your hole cards plus 3 from the board.`;
+  if (category === 1) return `Your best 2-hole + 3-board combo makes one pair — ${pick(rng, OMAHA_MADE.onePair)}`;
+  if (category === 2) return `Two pair through the Omaha rule — ${pick(rng, OMAHA_MADE.twoPair)}`;
+  if (category === 3) return `Three of a kind under the Omaha rule — ${pick(rng, OMAHA_MADE.trips)}`;
+  if (category === 4) return `A straight, played through 2 of your hole cards — ${pick(rng, OMAHA_MADE.straight)}`;
+  if (category === 5) return `A flush, played through 2 of your hole cards — ${pick(rng, OMAHA_MADE.flush)}`;
+  if (category === 6) return `A full house — ${pick(rng, OMAHA_MADE.fullHouse)}`;
+  if (category === 7) return `Four of a kind under the Omaha rule — ${pick(rng, OMAHA_MADE.quads)}`;
+  return `A straight flush — ${pick(rng, OMAHA_MADE.straightFlush)}`;
 }
 
 /**
@@ -105,6 +178,7 @@ function omahaMadeHand(category) {
 function omahaDraws(user, board, category) {
   if (board.length >= 5) return null;
   if (category >= 5) return null;
+  const rng = rngFor(`omaha|draws|${cardsKey(user)}|${cardsKey(board)}`);
 
   /** @type {string[]} */ const parts = [];
   const userSC = suitCounts(user);
@@ -115,14 +189,19 @@ function omahaDraws(user, board, category) {
   for (let s = 0; s < 4; s++) {
     if (userSC[s] >= 2 && boardSC[s] >= 2) {
       const outs = 13 - userSC[s] - boardSC[s];
-      parts.push(`You've got an Omaha flush draw — 2 of one suit in hand backed by 2 on the board, ${outs} outs, ${drawPctText(outs, board.length)} by the river.`);
+      const lead = pick(rng, ["You've got", "You're on", "You hold"]);
+      parts.push(`${lead} an Omaha flush draw — 2 of one suit in hand backed by 2 on the board, ${outs} outs, ${drawPctText(outs, board.length)} by the river.`);
       flushDraw = true;
       break;
     }
     if (userSC[s] === 1 && boardSC[s] >= 3) flushTrap = true;
   }
   if (flushTrap && !flushDraw) {
-    parts.push("Heads up — a single card of a 3-suited board doesn't make a flush in Omaha. You'd need 2 of that suit in your hand and you have only 1.");
+    parts.push(pick(rng, [
+      "Heads up — a single card of a 3-suited board doesn't make a flush in Omaha. You'd need 2 of that suit in your hand and you have only 1.",
+      "Careful — one card of a 3-suited board is no flush in Omaha; you need 2 of that suit in hand, and you hold just 1.",
+      "Don't be fooled — a 3-suited board with a single matching card isn't an Omaha flush. Two in hand are required, and you have one.",
+    ]));
   }
   return parts.length ? parts.join(" ") : null;
 }
@@ -142,20 +221,34 @@ function omahaBoardThreats(user, board, category) {
   const bSC = suitCounts(board);
   const bRC = rankCounts(board);
   const moreToCome = board.length < 5;
+  const rng = rngFor(`omaha|threats|${cardsKey(user)}|${cardsKey(board)}`);
 
   if (category < 5) {
     let maxBoardSuit = 0;
     for (let s = 0; s < 4; s++) if (bSC[s] > maxBoardSuit) maxBoardSuit = bSC[s];
     if (maxBoardSuit >= 3) {
-      parts.push(`The board has ${maxBoardSuit} of one suit — any opponent holding 2 of that suit makes a flush.`);
+      parts.push(pick(rng, [
+        `The board has ${maxBoardSuit} of one suit — any opponent holding 2 of that suit makes a flush.`,
+        `With ${maxBoardSuit} of a suit out, anyone holding 2 of it has a flush.`,
+        `${maxBoardSuit} of one suit are on the board; 2 in an opponent's hand make a flush.`,
+      ]));
     } else if (maxBoardSuit === 2 && moreToCome) {
-      parts.push("Two of one suit on the board — opponents with 2 of that suit in hand have a flush draw.");
+      parts.push(pick(rng, [
+        "Two of one suit on the board — opponents with 2 of that suit in hand have a flush draw.",
+        "A two-suited board means anyone with 2 of that suit holds a flush draw.",
+        "Two of a suit are out, so opponents holding 2 of it are drawing to a flush.",
+      ]));
     }
   }
   let boardPair = 0;
   for (let r = 2; r <= 14; r++) if (bRC[r] === 2) boardPair = r;
   if (boardPair && category < 6) {
-    parts.push(`The paired ${rankPlural(boardPair)} on the board means anyone playing a matching pair from their hand makes a full house.`);
+    const rp = rankPlural(boardPair);
+    parts.push(pick(rng, [
+      `The paired ${rp} on the board means anyone playing a matching pair from their hand makes a full house.`,
+      `With the board paired in ${rp}, an opponent with a matching pair has a full house.`,
+      `Those paired ${rp} let anyone holding a matching pair fill up.`,
+    ]));
   }
   return parts.length ? parts.join(" ") : null;
 }
