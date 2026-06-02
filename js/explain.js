@@ -10,6 +10,7 @@
 // one entry in the SNAPSHOTS table below — not growing this file.
 
 import { categoryFor, decap } from "./explain/core.js";
+import { rngFor, pick } from "./prose.js";
 import { holdemSnapshot, holdemTrajectoryParagraphs, recapHand } from "./explain/holdem.js";
 import { omahaSnapshot } from "./explain/omaha.js";
 import { noBoardRead } from "./explain/draw.js";
@@ -179,8 +180,28 @@ function threatNoun(oppCat, userCat) {
 
 /** @param {number} n */
 function playerCountLine(n) {
-  if (n === 2) return "Heads-up, weaker hands gain value — fewer ways for an opponent to have you beat.";
-  if (n <= 4) return `${n}-handed gives marginal hands more room to play.`;
-  if (n <= 6) return `With ${n} players, somebody usually has something — be careful with marginal hands.`;
-  return `At a full ${n}-handed table, expect strong hands to be out — fold marginal stuff without solid odds.`;
+  // Keyed by table size, so the table-size note is stable within a session but
+  // varies across sessions. The heads-up branch keeps "Heads-up, weaker hands
+  // gain value" in every variant — the explainer cross-check anchors on it.
+  const rng = rngFor(`players|${n}`);
+  if (n === 2) return pick(rng, [
+    "Heads-up, weaker hands gain value — fewer ways for an opponent to have you beat.",
+    "Heads-up, weaker hands gain value; there's only one opponent who can have you beat.",
+    "Heads-up, weaker hands gain value, since a single opponent has fewer ways to be ahead.",
+  ]);
+  if (n <= 4) return pick(rng, [
+    `${n}-handed gives marginal hands more room to play.`,
+    `Short-handed at ${n}, marginal hands gain some room to play.`,
+    `With only ${n} at the table, marginal hands play a little better.`,
+  ]);
+  if (n <= 6) return pick(rng, [
+    `With ${n} players, somebody usually has something — be careful with marginal hands.`,
+    `At ${n} players, someone usually connects; tread carefully with marginal hands.`,
+    `${n}-handed, expect somebody to have a piece — marginal hands want caution.`,
+  ]);
+  return pick(rng, [
+    `At a full ${n}-handed table, expect strong hands to be out — fold marginal stuff without solid odds.`,
+    `A full ${n}-handed table means strong hands are likely out; fold marginal holdings without odds.`,
+    `With ${n} at the table, premium hands are usually represented — let marginal stuff go without solid odds.`,
+  ]);
 }
