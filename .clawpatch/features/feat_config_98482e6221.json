@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_config_98482e6221",
+  "title": "Theme System",
+  "summary": "Theme registry and concrete visual themes for the poker UI.\n\nAgent mapper reason: The theme stylesheet and individual theme files are a coherent visual configuration surface separate from app logic.",
+  "kind": "config",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "css/themes.css",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "css/themes.css",
+      "reason": "Shared theme variables and theme application rules."
+    },
+    {
+      "path": "themes/brutalist-dark.css",
+      "reason": "Concrete dark brutalist theme."
+    },
+    {
+      "path": "themes/brutalist.css",
+      "reason": "Concrete brutalist theme."
+    },
+    {
+      "path": "themes/classic-burgundy.css",
+      "reason": "Concrete classic burgundy theme."
+    },
+    {
+      "path": "themes/classic-casino.css",
+      "reason": "Concrete classic casino theme."
+    },
+    {
+      "path": "themes/editorial.css",
+      "reason": "Concrete editorial theme."
+    },
+    {
+      "path": "themes/vegas-neon.css",
+      "reason": "Concrete Vegas neon theme."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "index.html",
+      "reason": "Loads or exposes theme styling in the browser document."
+    },
+    {
+      "path": "js/ui.js",
+      "reason": "May control theme selection or theme-related UI state."
+    },
+    {
+      "path": "css/base.css",
+      "reason": "Base styles interact with theme variables and overrides."
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "agent-mapped",
+    "css",
+    "themes",
+    "visual-design"
+  ],
+  "trustBoundaries": [],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-config-98482e6221-7662d_9a1cc9a266"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260520T181554-fe4612",
+      "kind": "review",
+      "summary": "1 finding(s); prompt=139186 bytes; approxTokens=34765; includedFiles=10; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-20T18:20:56.246Z"
+    }
+  ],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:20:56.246Z"
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_library_3da47c4bf6",
+  "title": "Poker Hand Evaluator",
+  "summary": "Core card and hand ranking logic for determining poker hand strength.\n\nAgent mapper reason: The evaluator is a standalone domain library with a dedicated test suite and shared card fixtures, so it should be reviewed independently from UI and simulation changes.",
+  "kind": "library",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "js/evaluator.js",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "Primary implementation for poker hand evaluation and ranking."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "test/_cards.js",
+      "reason": "Shared card fixtures used by evaluator-related tests."
+    },
+    {
+      "path": "README.md",
+      "reason": "Project-level behavior context for the poker experience."
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "reason": "nearby test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/evaluator.test.js",
+      "command": null
+    }
+  ],
+  "tags": [
+    "agent-mapped",
+    "poker",
+    "cards",
+    "ranking",
+    "core-logic"
+  ],
+  "trustBoundaries": [
+    "user-input"
+  ],
+  "status": "reviewed",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260520T181554-fe4612",
+      "kind": "review",
+      "summary": "0 finding(s); prompt=24184 bytes; approxTokens=6014; includedFiles=4; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-20T18:17:13.415Z"
+    }
+  ],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:17:13.415Z"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-config-98482e6221-7662d_9a1cc9a266",
+  "featureId": "feat_config_98482e6221",
+  "title": "Vegas Neon removes visible focus from action buttons",
+  "category": "bug",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "confirmed-bug",
+  "evidence": [
+    {
+      "path": "index.html",
+      "startLine": 80,
+      "endLine": 85,
+      "symbol": "#deal, #play, #fold",
+      "quote": "<button id=\"deal\" class=\"btn-primary\">Deal</button>"
+    },
+    {
+      "path": "themes/vegas-neon.css",
+      "startLine": 182,
+      "endLine": 186,
+      "symbol": "select:focus, button:focus",
+      "quote": "select:focus, button:focus { outline: none; }"
+    }
+  ],
+  "reasoning": "The Vegas Neon theme suppresses the browser focus outline for every button, but the replacement focus styling that follows is only applied to selects. Deal, Play, and Fold are keyboard-focusable buttons, so keyboard users can tab onto the primary game controls without any visible focus indicator in this theme.",
+  "reproduction": "Switch to Vegas Neon and tab to Deal, Play, or Fold. The theme sets button outline to none and adds no button-specific focus-visible border, outline, or shadow.",
+  "recommendation": "In themes/vegas-neon.css, either stop clearing button outlines or add an explicit button:focus-visible style, for example a neon cyan outline/box-shadow with outline-offset. Keep the existing select focus styling.",
+  "whyTestsDoNotAlreadyCoverThis": "The existing node --test test/*.test.js suites passed 119/119, but they cover evaluator, simulator, variants, and explanation logic only. There are no DOM, visual, or accessibility tests for theme focus states.",
+  "suggestedRegressionTest": "Add a browser smoke test that cycles through each theme, tabs through visible controls, and asserts focused buttons have a visible focus indicator such as non-none outline, border change, or focus box-shadow.",
+  "minimumFixScope": "themes/vegas-neon.css button focus styling.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-config-98482e6221_7662d992b7",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260520T181554-fe4612",
+  "createdAt": "2026-05-20T18:20:56.245Z",
+  "updatedAt": "2026-05-20T18:20:56.245Z"
+}

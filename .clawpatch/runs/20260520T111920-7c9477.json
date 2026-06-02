@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260520T111920-7c9477",
+  "command": "review",
+  "args": [
+    "review",
+    "--limit",
+    "10"
+  ],
+  "rootPath": "/Users/felipe/Work/projects/felipe/poker/main",
+  "headSha": "bee76a3d94a92b4d9555208d4f9ec8b7145a020b",
+  "startedAt": "2026-05-20T11:19:20.695Z",
+  "finishedAt": "2026-05-20T11:19:20.696Z",
+  "status": "completed",
+  "claimedFeatureIds": [],
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "errors": []
+}

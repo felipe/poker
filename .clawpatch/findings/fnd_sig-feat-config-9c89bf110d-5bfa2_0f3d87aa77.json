@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-config-9c89bf110d-5bfa2_0f3d87aa77",
+  "featureId": "feat_config_9c89bf110d",
+  "title": "Mandatory pre-merge gate falls back to an npm test command this repo does not have",
+  "category": "build-release",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "risk",
+  "evidence": [
+    {
+      "path": "README.md",
+      "startLine": 3,
+      "endLine": 3,
+      "symbol": null,
+      "quote": "A single-page poker odds calculator with no build step and no npm/runtime packages."
+    },
+    {
+      "path": "README.md",
+      "startLine": 147,
+      "endLine": 151,
+      "symbol": null,
+      "quote": "Unit tests for the pure-function modules (`evaluator.js`, `variants.js`, `simulate.js`) live in `test/`. They use Node's built-in test runner — no npm packages, no build step."
+    },
+    {
+      "path": "AGENTS.md",
+      "startLine": 38,
+      "endLine": 40,
+      "symbol": null,
+      "quote": "- **Pre-merge gate is mandatory.** Before any PR is marked ready for review, run `/pre-merge`. Every test in `.pre-merge.yml` must pass. Do not request human review on a failing branch."
+    },
+    {
+      "path": "commands/pre-merge.md",
+      "startLine": 19,
+      "endLine": 23,
+      "symbol": null,
+      "quote": "Check for `.pre-merge.yml` at the project root."
+    },
+    {
+      "path": "commands/pre-merge.md",
+      "startLine": 86,
+      "endLine": 90,
+      "symbol": null,
+      "quote": "**unit** (unit and integration tests):\n```bash\nnpm test -- --run\n```\nMust pass."
+    }
+  ],
+  "reasoning": "The current tree has no package.json and no .pre-merge.yml, so the mandatory /pre-merge workflow enters the fallback path. That fallback runs an npm test script, but the repository explicitly documents package-less tests via Node's built-in runner. A contributor or agent following the required gate will fail before running the real tests or need to override the documented workflow, making release readiness non-deterministic.",
+  "reproduction": "Repository scan found no package.json and no .pre-merge.yml. Following commands/pre-merge.md without a manifest reaches the fallback unit stage `npm test -- --run`, while the documented passing command is `node --test test/*.test.js`.",
+  "recommendation": "Add a root .pre-merge.yml that defines the unit stage as `node --test test/*.test.js` and reflects that there is no package manager/build step. Optionally adjust the fallback docs to handle package-less Node projects.",
+  "whyTestsDoNotAlreadyCoverThis": "The unit tests validate app behavior when invoked directly; they do not validate that the mandatory pre-merge workflow can discover and run the correct command.",
+  "suggestedRegressionTest": "Run `/pre-merge` or an equivalent manifest-driven CI check and assert it executes `node --test test/*.test.js` successfully.",
+  "minimumFixScope": "Add .pre-merge.yml with the documented unit test command.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-config-9c89bf110d_5bfa2f901d",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260520T181554-fe4612",
+  "createdAt": "2026-05-20T18:18:52.732Z",
+  "updatedAt": "2026-05-20T18:18:52.732Z"
+}

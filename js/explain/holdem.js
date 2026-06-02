@@ -6,6 +6,10 @@ import {
   rankName, rankPlural, aOrAn, rankCounts, suitCounts,
   categoryOf, decap, drawPctText,
 } from "./core.js";
+import { rngFor, pick } from "../prose.js";
+import {
+  MADE_TAILS, PREFLOP_TAILS, DRAW_FRAGS, THREAT_FRAGS, RECAP_FRAGS,
+} from "./holdem-fragments.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
 
@@ -52,28 +56,56 @@ export function holdemTrajectoryParagraphs(history) {
     const lower = s.label.toLowerCase();
     /** @type {string[]} */
     const parts = [];
+    const rng = rngFor("holdem", "traj", s.label, s.user, s.board);
+    // Neutral "what you have now" lead, reused by the pre-flop→flop and the
+    // category-dropped branches. Splices the (already varied) made-hand line.
+    const neutral = () => pick(rng, [
+      `On the ${lower}, ${decap(state.madeLine)}`,
+      `By the ${lower}, ${decap(state.madeLine)}`,
+      `Come the ${lower}, ${decap(state.madeLine)}`,
+    ]);
 
     if (prev && prev.category === -1) {
       // Pre-flop → flop. Neutral lead — the flop is the first time we have a
       // made-hand category at all, so "helped" or "brick" both feel wrong.
-      parts.push(`On the ${lower}, ${decap(state.madeLine)}`);
+      parts.push(neutral());
     } else if (prev && state.category > prev.category) {
-      parts.push(`The ${lower} helped — ${decap(state.madeLine)}`);
+      parts.push(pick(rng, [
+        `The ${lower} helped — ${decap(state.madeLine)}`,
+        `The ${lower} improved things — ${decap(state.madeLine)}`,
+        `The ${lower} moved you up — ${decap(state.madeLine)}`,
+      ]));
     } else if (prev && state.madeLine === prev.madeLine) {
       // Same made hand. The interesting question is whether the board got
       // worse — new threats appearing means the hand was watered even though
       // its category didn't budge.
       if (state.threats && state.threats !== prev.threats) {
-        parts.push(`The ${lower} didn't improve your hand, but the board got worse for you.`);
+        parts.push(pick(rng, [
+          `The ${lower} didn't improve your hand, but the board got worse for you.`,
+          `The ${lower} didn't help your hand, and the board got more dangerous.`,
+          `Your hand didn't improve on the ${lower}, but the board got scarier.`,
+        ]));
       } else if (state.draws && state.draws !== prev.draws) {
-        parts.push(`The ${lower} didn't improve your hand, but you picked up a draw.`);
+        parts.push(pick(rng, [
+          `The ${lower} didn't improve your hand, but you picked up a draw.`,
+          `No improvement on the ${lower}, though you did pick up a draw.`,
+          `The ${lower} didn't change your made hand, but a draw appeared.`,
+        ]));
       } else if (prev.draws && !state.draws && s.board.length === 5) {
-        parts.push(`The ${lower} bricked — your draw didn't come in.`);
+        parts.push(pick(rng, [
+          `The ${lower} bricked — your draw didn't come in.`,
+          `The ${lower} bricked; the draw missed.`,
+          `Your draw missed on the ${lower}.`,
+        ]));
       } else {
-        parts.push(`The ${lower} was a brick — nothing changed.`);
+        parts.push(pick(rng, [
+          `The ${lower} was a brick — nothing changed.`,
+          `The ${lower} was a blank — nothing changed.`,
+          `Nothing changed on the ${lower}.`,
+        ]));
       }
     } else {
-      parts.push(`On the ${lower}, ${decap(state.madeLine)}`);
+      parts.push(neutral());
     }
 
     // New draws and threats since the previous street get their own sentences.
@@ -116,6 +148,7 @@ export function recapHand(ctx) {
   const endPct = Math.round(last.winRate * 100);
   const delta = last.winRate - first.winRate;
   const finalHand = describeFinalHand(last.user, last.board);
+  const rng = rngFor("holdem", "recap", last.user, last.board);
 
   const SIG = 0.05;
 
@@ -128,7 +161,7 @@ export function recapHand(ctx) {
   }
 
   if (delta >= SIG) {
-    return `You ended with ${finalHand}, and your equity climbed from ${startPct}% to ${endPct}% along the way — the board helped you more than it helped opponents.`;
+    return `You ended with ${finalHand}, and your equity climbed from ${startPct}% to ${endPct}% along the way — ${pick(rng, RECAP_FRAGS.climbedTail)}`;
   }
 
   if (delta <= -SIG) {
@@ -144,10 +177,10 @@ export function recapHand(ctx) {
         why = ` The biggest single-street drop was on the ${dropStreet.label.toLowerCase()} (${dropPP} points).`;
       }
     }
-    return `You ended with ${finalHand}, but your equity fell from ${startPct}% to ${endPct}%.${why} Made hands can mislead — every card on the board that helps you can help opponents more.`;
+    return `You ended with ${finalHand}, but your equity fell from ${startPct}% to ${endPct}%.${why} ${pick(rng, RECAP_FRAGS.fellTail)}`;
   }
 
-  return `Your equity stayed roughly steady (${startPct}% → ${endPct}%), ending with ${finalHand}.`;
+  return `${pick(rng, RECAP_FRAGS.steady)} (${startPct}% → ${endPct}%), ending with ${finalHand}.`;
 }
 
 /**
@@ -306,49 +339,51 @@ function holdemPreflop(cards) {
   const [hi, lo] = cards[0].rank >= cards[1].rank ? cards : [cards[1], cards[0]];
   const suited = cards[0].suit === cards[1].suit;
   const gap = hi.rank - lo.rank;
+  const rng = rngFor("holdem", "preflop", cards);
+  const tail = key => pick(rng, PREFLOP_TAILS[key]);
 
   if (hi.rank === lo.rank) {
-    if (hi.rank === 14) return "Pocket aces — the strongest starting hand in Hold'em.";
-    if (hi.rank === 13) return "Pocket kings — second only to aces, with an ace on the flop the only real nightmare.";
-    if (hi.rank === 12) return "Pocket queens — premium, but you'll sweat every ace or king that comes.";
-    if (hi.rank === 11) return "Pocket jacks — strong, but any overcard on the flop chips at your confidence.";
-    if (hi.rank >= 8) return `Pocket ${rankPlural(hi.rank)} — a solid middle pair, ahead of most random hands but easily outflopped.`;
-    return `Pocket ${rankPlural(hi.rank)} — a small pair. Usually you need to flop a set or fold to action on overcards.`;
+    if (hi.rank === 14) return `Pocket aces — ${tail("aces")}`;
+    if (hi.rank === 13) return `Pocket kings — ${tail("kings")}`;
+    if (hi.rank === 12) return `Pocket queens — ${tail("queens")}`;
+    if (hi.rank === 11) return `Pocket jacks — ${tail("jacks")}`;
+    if (hi.rank >= 8) return `Pocket ${rankPlural(hi.rank)} — ${tail("midPair")}`;
+    return `Pocket ${rankPlural(hi.rank)} — ${tail("smallPair")}`;
   }
 
   if (hi.rank === 14 && lo.rank === 13) {
     return suited
-      ? "Ace-king suited — premium. Flops top pair often and has both flush and straight potential."
-      : "Ace-king off-suit — premium high-card hand, but you usually need to pair to win the pot.";
+      ? `Ace-king suited — ${tail("aceKingSuited")}`
+      : `Ace-king off-suit — ${tail("aceKingOff")}`;
   }
   if (hi.rank === 14 && lo.rank >= 11) {
     return suited
-      ? `Ace-${rankName(lo.rank)} suited — strong, with flush potential backing up the high cards.`
-      : `Ace-${rankName(lo.rank)} off-suit — solid, but dominated by ace-king and bigger pairs.`;
+      ? `Ace-${rankName(lo.rank)} suited — ${tail("aceBroadwaySuited")}`
+      : `Ace-${rankName(lo.rank)} off-suit — ${tail("aceBroadwayOff")}`;
   }
   if (hi.rank === 14) {
     return suited
-      ? "A suited ace with a weak kicker — playable for the nut-flush potential, but the kicker often costs you the pot."
-      : "An ace with a weak off-suit kicker — easily dominated, especially in a multiway pot.";
+      ? `A suited ace with a weak kicker — ${tail("weakAceSuited")}`
+      : `An ace with a weak off-suit kicker — ${tail("weakAceOff")}`;
   }
   if (hi.rank >= 12 && lo.rank >= 10) {
     return suited
-      ? "Suited broadway — flops top pair often and has straight and flush potential."
-      : "Broadway off-suit — decent, but vulnerable to bigger pairs and ace-high hands.";
+      ? `Suited broadway — ${tail("broadwaySuited")}`
+      : `Broadway off-suit — ${tail("broadwayOff")}`;
   }
   if (hi.rank === 7 && lo.rank === 2 && !suited) {
-    return "Seven-deuce off-suit — the textbook worst starting hand in the game.";
+    return `Seven-deuce off-suit — ${tail("sevenDeuce")}`;
   }
   if (suited && gap <= 2) {
-    return "Suited connectors — speculative. You're playing for straights, flushes, and the occasional surprise two pair.";
+    return `Suited connectors — ${tail("suitedConnectors")}`;
   }
   if (suited) {
-    return "Suited but disconnected — the flush draw is the main reason to play; the straight is a long shot.";
+    return `Suited but disconnected — ${tail("suitedDisconnected")}`;
   }
   if (gap <= 2 && hi.rank <= 10) {
-    return "Off-suit connectors — speculative. Plays for straights, but easily dominated.";
+    return `Off-suit connectors — ${tail("offsuitConnectors")}`;
   }
-  return "A marginal off-suit hand — needs a friendly flop to be worth more than fold equity.";
+  return `A marginal off-suit hand — ${tail("marginalOff")}`;
 }
 
 /* ---------- Hold'em post-flop ---------- */
@@ -363,13 +398,16 @@ function holdemMadeHand(user, board) {
   const userRC = rankCounts(user);
   const boardRC = rankCounts(board);
   const allRC = rankCounts(all);
+  // One RNG per situation: the same (session, hole, board) always renders the
+  // same wording; a new session or different cards reshuffles the tail.
+  const rng = rngFor("holdem", "made", user, board);
 
   if (category === 0) {
     // "Best card" used to read off the user's hole only — misleading when the
     // board has a higher card (everyone shares it at showdown). Use combined
     // high and standard "ace-high" / "king-high" phrasing.
     const high = all.reduce((a, b) => (a.rank > b.rank ? a : b));
-    return `You haven't paired anything yet — ${rankName(high.rank)}-high.`;
+    return `${pick(rng, MADE_TAILS.highCardLead)} — ${rankName(high.rank)}-high.`;
   }
 
   if (category === 1) {
@@ -377,11 +415,11 @@ function holdemMadeHand(user, board) {
     for (let r = 14; r >= 2; r--) if (allRC[r] === 2) { pr = r; break; }
     if (userRC[pr] === 2) {
       const maxBoard = Math.max(...board.map(c => c.rank));
-      if (pr > maxBoard) return `Your pocket ${rankPlural(pr)} are an overpair to the board — strong.`;
-      return `Your pocket ${rankPlural(pr)} are under the board's high card — vulnerable to anyone who's hit a pair on the flop.`;
+      if (pr > maxBoard) return `Your pocket ${rankPlural(pr)} are an overpair to the board — ${pick(rng, MADE_TAILS.overpair)}`;
+      return `Your pocket ${rankPlural(pr)} are under the board's high card — ${pick(rng, MADE_TAILS.underpair)}`;
     }
     if (boardRC[pr] === 2) {
-      return `The board has a pair of ${rankPlural(pr)} that doesn't involve your hand — you're effectively playing for kicker.`;
+      return `The board has a pair of ${rankPlural(pr)} that doesn't involve your hand — ${pick(rng, MADE_TAILS.boardPair)}`;
     }
     const boardSorted = board.map(c => c.rank).sort((a, b) => b - a);
     const idx = boardSorted.indexOf(pr);
@@ -398,31 +436,31 @@ function holdemMadeHand(user, board) {
         ? `, ${rankName(holeKicker.rank)} kicker`
         : `, with the ${rankName(holeKicker.rank)} in the hole`;
     }
-    if (idx === 0) return `Top pair, ${rankPlural(pr)}${kickerStr} — a solid one-pair hand.`;
-    if (idx === boardSorted.length - 1) return `Bottom pair, ${rankPlural(pr)}${kickerStr} — weak, easily outkicked or outdrawn.`;
-    return `Middle pair, ${rankPlural(pr)}${kickerStr} — okay, but two board cards beat it.`;
+    if (idx === 0) return `Top pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.topPair)}`;
+    if (idx === boardSorted.length - 1) return `Bottom pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.bottomPair)}`;
+    return `Middle pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.middlePair)}`;
   }
 
   if (category === 2) {
     /** @type {number[]} */ const pairs = [];
     for (let r = 14; r >= 2; r--) if (allRC[r] >= 2) pairs.push(r);
     const [p1, p2] = pairs;
-    return `Two pair, ${rankPlural(p1)} and ${rankPlural(p2)} — strong, but a paired board can already be a full house for someone.`;
+    return `Two pair, ${rankPlural(p1)} and ${rankPlural(p2)} — ${pick(rng, MADE_TAILS.twoPair)}`;
   }
 
   if (category === 3) {
     let tr = 0;
     for (let r = 14; r >= 2; r--) if (allRC[r] === 3) { tr = r; break; }
-    if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. Well hidden, very strong.`;
-    if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — you have the trips, but so does everyone else. It comes down to kickers, and anyone with a pocket pair has a full house.`;
-    return `Trips, ${rankPlural(tr)} — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.`;
+    if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. ${pick(rng, MADE_TAILS.set)}`;
+    if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — ${pick(rng, MADE_TAILS.boardTrips)}`;
+    return `Trips, ${rankPlural(tr)} — ${pick(rng, MADE_TAILS.trips)}`;
   }
 
-  if (category === 4) return "A straight — strong, though a flush can still beat you and a paired board threatens a full house.";
-  if (category === 5) return "A flush — strong. Watch for a higher flush or a paired board.";
-  if (category === 6) return "A full house — almost always the winner. Quads or a higher boat are the only real threats.";
-  if (category === 7) return "Four of a kind — almost a lock.";
-  return "A straight flush — the nuts.";
+  if (category === 4) return `A straight — ${pick(rng, MADE_TAILS.straight)}`;
+  if (category === 5) return `A flush — ${pick(rng, MADE_TAILS.flush)}`;
+  if (category === 6) return `A full house — ${pick(rng, MADE_TAILS.fullHouse)}`;
+  if (category === 7) return `Four of a kind — ${pick(rng, MADE_TAILS.quads)}`;
+  return `A straight flush — ${pick(rng, MADE_TAILS.straightFlush)}`;
 }
 
 /**
@@ -436,6 +474,7 @@ function holdemDraws(user, board) {
   const all = user.concat(board);
   const category = categoryOf(all);
   if (category >= 4) return null; // Already on a straight or better — no point chasing.
+  const rng = rngFor("holdem", "draws", user, board);
 
   /** @type {string[]} */ const parts = [];
   const sc = suitCounts(all);
@@ -445,9 +484,9 @@ function holdemDraws(user, board) {
       if (userInSuit.length > 0) {
         const pct = drawPctText(9, board.length);
         if (userInSuit.some(c => c.rank === 14)) {
-          parts.push(`You're drawing to the nut flush — 9 outs, ${pct} by the river.`);
+          parts.push(`You're drawing to the nut flush — 9 outs, ${pct} by the river.${pick(rng, DRAW_FRAGS.nutFlourish)}`);
         } else {
-          parts.push(`You're on a flush draw — 9 outs, ${pct} by the river, but a higher flush is possible for anyone holding bigger cards in the suit.`);
+          parts.push(`You're on a flush draw — 9 outs, ${pct} by the river, ${pick(rng, DRAW_FRAGS.flushCaveat)}`);
         }
       }
       break;
@@ -489,8 +528,8 @@ function holdemDraws(user, board) {
     }
   }
 
-  if (oesd) parts.push(`You've got an open-ended straight draw — 8 outs, ${drawPctText(8, board.length)} by the river.`);
-  else if (gutshot) parts.push(`You've got a gutshot straight draw — 4 outs, ${drawPctText(4, board.length)} by the river.`);
+  if (oesd) parts.push(`${pick(rng, DRAW_FRAGS.straightLead)} an open-ended straight draw — 8 outs, ${drawPctText(8, board.length)} by the river.`);
+  else if (gutshot) parts.push(`${pick(rng, DRAW_FRAGS.straightLead)} a gutshot straight draw — 4 outs, ${drawPctText(4, board.length)} by the river.`);
 
   return parts.length ? parts.join(" ") : null;
 }
@@ -508,6 +547,7 @@ function holdemBoardThreats(user, board) {
   const bSC = suitCounts(board);
   const bRC = rankCounts(board);
   const category = categoryOf(user.concat(board));
+  const rng = rngFor("holdem", "threats", user, board);
 
   const moreToCome = board.length < 5;
 
@@ -524,10 +564,10 @@ function holdemBoardThreats(user, board) {
       const userInSuit = user.filter(c => c.suit === flushSuit).length;
       if (userInSuit === 0) {
         if (flushCount === 3) {
-          parts.push("The board already has three of one suit — anyone holding two of that suit has made a flush.");
+          parts.push(pick(rng, THREAT_FRAGS.threeSuit));
         } else {
           // 4 on board.
-          parts.push("The board has four of one suit — anyone holding even a single card of that suit has made a flush.");
+          parts.push(pick(rng, THREAT_FRAGS.fourSuit));
         }
       }
       // userInSuit >= 1 means it's our flush draw (or our flush, in which
@@ -539,7 +579,7 @@ function holdemBoardThreats(user, board) {
       if (twoSuit >= 0) {
         const userInSuit = user.filter(c => c.suit === twoSuit).length;
         if (userInSuit === 0) {
-          parts.push("Two of one suit on the board means flush draws are live for anyone holding the suit.");
+          parts.push(pick(rng, THREAT_FRAGS.twoSuit));
         }
       }
     }
@@ -550,7 +590,12 @@ function holdemBoardThreats(user, board) {
     for (let r = 2; r <= 14; r++) if (bRC[r] === 2) boardPair = r;
     // Board-trips are already covered by the made-hand line, so skip here.
     if (boardPair && category < 3) {
-      parts.push(`The paired ${rankPlural(boardPair)} on the board mean anyone holding the case card has trips already.`);
+      const rp = rankPlural(boardPair);
+      parts.push(pick(rng, [
+        `The paired ${rp} on the board mean anyone holding the case card has trips already.`,
+        `Those paired ${rp} give anyone with the case card trips already.`,
+        `Watch the paired ${rp}: anyone holding the last one has trips.`,
+      ]));
     }
   }
 
@@ -563,7 +608,7 @@ function holdemBoardThreats(user, board) {
       if (count >= 3) { connected = true; break; }
     }
     if (connected) {
-      parts.push("The board's connected enough that a straight or straight draw is realistic.");
+      parts.push(pick(rng, THREAT_FRAGS.connected));
     }
   }
 

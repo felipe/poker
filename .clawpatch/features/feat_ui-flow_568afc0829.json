@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_ui-flow_568afc0829",
+  "title": "Interactive Poker App",
+  "summary": "Browser UI flow that wires the poker logic into the playable single-page experience.\n\nAgent mapper reason: The HTML entrypoint, app bootstrap, UI module, and base stylesheet form the main user-facing browser workflow and should be reviewed together.",
+  "kind": "ui-flow",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "index.html",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "index.html",
+      "reason": "Primary browser entrypoint and document structure."
+    },
+    {
+      "path": "js/main.js",
+      "reason": "Application bootstrap and orchestration logic."
+    },
+    {
+      "path": "js/ui.js",
+      "reason": "Interactive UI rendering and event handling."
+    },
+    {
+      "path": "css/base.css",
+      "reason": "Base layout and component styling for the app UI."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "Core hand logic surfaced through the UI."
+    },
+    {
+      "path": "js/explain.js",
+      "reason": "Explanation text surfaced through the UI."
+    },
+    {
+      "path": "js/simulate.js",
+      "reason": "Simulation behavior surfaced through the UI."
+    },
+    {
+      "path": "js/variants.js",
+      "reason": "Variant selection or rules surfaced through the UI."
+    },
+    {
+      "path": "css/themes.css",
+      "reason": "Theme hooks used by the UI shell."
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "agent-mapped",
+    "browser",
+    "single-page-app",
+    "ui",
+    "poker"
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "serialization"
+  ],
+  "status": "pending",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:13:59.008Z"
+}

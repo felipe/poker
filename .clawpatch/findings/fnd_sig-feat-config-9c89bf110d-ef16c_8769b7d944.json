@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-config-9c89bf110d-ef16c_8769b7d944",
+  "featureId": "feat_config_9c89bf110d",
+  "title": "README labels Node 22 as current Active LTS after it moved to Maintenance LTS",
+  "category": "docs-gap",
+  "severity": "low",
+  "confidence": "high",
+  "triage": "docs-gap",
+  "evidence": [
+    {
+      "path": "README.md",
+      "startLine": 153,
+      "endLine": 153,
+      "symbol": null,
+      "quote": "Requires **Node 22+** (pinned in `.nvmrc`). The runner has been stable since Node 20; 22 is the current Active LTS."
+    },
+    {
+      "path": ".nvmrc",
+      "startLine": 1,
+      "endLine": 1,
+      "symbol": null,
+      "quote": "22"
+    }
+  ],
+  "reasoning": "As of 2026-05-20, the official Node.js release schedule lists 22.x as Maintenance LTS and 24.x as Active LTS. The Node 22 pin may still be supported, but calling it the current Active LTS is stale and can mislead setup or upgrade decisions.",
+  "reproduction": null,
+  "recommendation": "Change the README wording to say Node 22 is the pinned supported LTS for this project, or update .nvmrc to the current Active LTS only after verifying the test suite under that version.",
+  "whyTestsDoNotAlreadyCoverThis": "Runtime tests do not check documentation currency; `node --test test/*.test.js` passed 119/119 during review.",
+  "suggestedRegressionTest": null,
+  "minimumFixScope": "README wording only, unless the project intentionally moves the runtime pin.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-config-9c89bf110d_ef16c94160",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260520T181554-fe4612",
+  "createdAt": "2026-05-20T18:18:52.732Z",
+  "updatedAt": "2026-05-20T18:18:52.732Z"
+}

@@ -16,6 +16,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
 import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout } from "../js/explain.js";
+import { setSessionSeed, articleFor } from "../js/prose.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -31,6 +32,7 @@ const SIM_ITERATIONS = 4000;
  */
 function golden(name, setup, expected) {
   test(`golden: ${name}`, () => {
+    setSessionSeed(0); // goldens are the seed-0 surface form; variation is checked separately
     const prose = streetSummary({
       userCards: hand(...setup.user),
       boardCards: hand(...setup.board),
@@ -43,25 +45,25 @@ function golden(name, setup, expected) {
 // --- Hold'em pre-flop -------------------------------------------------
 
 golden("AA pre-flop", { user: ["As", "Ah"], board: [], variant: "holdem" },
-  "Pocket aces — the strongest starting hand in Hold'em.");
+  "Pocket aces — the strongest starting hand in the game, just don't slow-play into a multiway mess.");
 
 golden("KK pre-flop", { user: ["Ks", "Kh"], board: [], variant: "holdem" },
   "Pocket kings — second only to aces, with an ace on the flop the only real nightmare.");
 
 golden("QQ pre-flop", { user: ["Qs", "Qh"], board: [], variant: "holdem" },
-  "Pocket queens — premium, but you'll sweat every ace or king that comes.");
+  "Pocket queens — a top-tier pair, just wary of the ace or king that flops.");
 
 golden("JJ pre-flop", { user: ["Js", "Jh"], board: [], variant: "holdem" },
   "Pocket jacks — strong, but any overcard on the flop chips at your confidence.");
 
 golden("88 pre-flop", { user: ["8s", "8h"], board: [], variant: "holdem" },
-  "Pocket eights — a solid middle pair, ahead of most random hands but easily outflopped.");
+  "Pocket eights — a decent middle pair, usually best preflop but often awkward after it.");
 
 golden("55 pre-flop", { user: ["5s", "5h"], board: [], variant: "holdem" },
-  "Pocket fives — a small pair. Usually you need to flop a set or fold to action on overcards.");
+  "Pocket fives — a small pair. Without a set, fold to action on overcards.");
 
 golden("AKs pre-flop", { user: ["As", "Ks"], board: [], variant: "holdem" },
-  "Ace-king suited — premium. Flops top pair often and has both flush and straight potential.");
+  "Ace-king suited — a premium holding, flopping top pair often with flush potential behind it.");
 
 golden("AKo pre-flop", { user: ["As", "Kh"], board: [], variant: "holdem" },
   "Ace-king off-suit — premium high-card hand, but you usually need to pair to win the pot.");
@@ -70,41 +72,41 @@ golden("AQs pre-flop", { user: ["As", "Qs"], board: [], variant: "holdem" },
   "Ace-queen suited — strong, with flush potential backing up the high cards.");
 
 golden("AJo pre-flop", { user: ["As", "Jh"], board: [], variant: "holdem" },
-  "Ace-jack off-suit — solid, but dominated by ace-king and bigger pairs.");
+  "Ace-jack off-suit — a fair high-card hand, often behind a better ace.");
 
 golden("A4s pre-flop", { user: ["As", "4s"], board: [], variant: "holdem" },
-  "A suited ace with a weak kicker — playable for the nut-flush potential, but the kicker often costs you the pot.");
+  "A suited ace with a weak kicker — the nut-flush upside is the draw here, but the kicker bleeds chips.");
 
 golden("A4o pre-flop", { user: ["As", "4h"], board: [], variant: "holdem" },
-  "An ace with a weak off-suit kicker — easily dominated, especially in a multiway pot.");
+  "An ace with a weak off-suit kicker — thin, and frequently dominated by a better ace.");
 
 golden("KQs pre-flop", { user: ["Ks", "Qs"], board: [], variant: "holdem" },
-  "Suited broadway — flops top pair often and has straight and flush potential.");
+  "Suited broadway — a smooth suited hand with top-pair, straight, and flush upside.");
 
 golden("KJo pre-flop", { user: ["Ks", "Jh"], board: [], variant: "holdem" },
   "Broadway off-suit — decent, but vulnerable to bigger pairs and ace-high hands.");
 
 golden("76s pre-flop", { user: ["7s", "6s"], board: [], variant: "holdem" },
-  "Suited connectors — speculative. You're playing for straights, flushes, and the occasional surprise two pair.");
+  "Suited connectors — speculative. Great implied odds when they connect, easy to fold when they miss.");
 
 golden("T9o pre-flop", { user: ["Ts", "9h"], board: [], variant: "holdem" },
   "Off-suit connectors — speculative. Plays for straights, but easily dominated.");
 
 golden("72o pre-flop", { user: ["7c", "2d"], board: [], variant: "holdem" },
-  "Seven-deuce off-suit — the textbook worst starting hand in the game.");
+  "Seven-deuce off-suit — the textbook worst starting hand; there's a reason it's the punchline.");
 
 golden("J3o pre-flop", { user: ["Jh", "3d"], board: [], variant: "holdem" },
-  "A marginal off-suit hand — needs a friendly flop to be worth more than fold equity.");
+  "A marginal off-suit hand — a weak holding that needs the board's help to matter.");
 
 // --- Hold'em post-flop ------------------------------------------------
 
 golden("AA overpair on rainbow flop",
   { user: ["As", "Ah"], board: ["7c", "4d", "2s"], variant: "holdem" },
-  "Your pocket aces are an overpair to the board — strong.");
+  "Your pocket aces are an overpair to the board — a strong made hand.");
 
 golden("AA overpair, 2-flush threat",
   { user: ["As", "Ah"], board: ["7d", "8d", "3c"], variant: "holdem" },
-  "Your pocket aces are an overpair to the board — strong. Two of one suit on the board means flush draws are live for anyone holding the suit.");
+  "Your pocket aces are an overpair to the board — a commanding overpair. Two of a suit are out, so flush draws are live for anyone in that suit.");
 
 golden("AKo top pair, ace kicker",
   { user: ["As", "Kh"], board: ["Ac", "7d", "2s"], variant: "holdem" },
@@ -112,19 +114,19 @@ golden("AKo top pair, ace kicker",
 
 golden("AKo top pair on K-high board",
   { user: ["As", "Kh"], board: ["Kc", "7d", "2s"], variant: "holdem" },
-  "Top pair, kings, ace kicker — a solid one-pair hand.");
+  "Top pair, kings, ace kicker — a good one-pair holding.");
 
 golden("88 underpair on overcard flop",
   { user: ["8s", "8h"], board: ["Ks", "Qh", "2c"], variant: "holdem" },
-  "Your pocket eights are under the board's high card — vulnerable to anyone who's hit a pair on the flop.");
+  "Your pocket eights are under the board's high card — weak here; overcards on the board beat you if they connected.");
 
 golden("55 set on dry flop",
   { user: ["5s", "5h"], board: ["5c", "9h", "Qs"], variant: "holdem" },
-  "A set of fives — your pocket pair hit the board. Well hidden, very strong.");
+  "A set of fives — your pocket pair hit the board. Disguised and powerful.");
 
 golden("trips on paired board",
   { user: ["Ks", "Th"], board: ["Kc", "Kd", "4s"], variant: "holdem" },
-  "Trips, kings — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.");
+  "Trips, kings — a strong hand, wary that the paired board makes a boat for some pocket pairs.");
 
 golden("board trips (player not contributing)",
   { user: ["7c", "8d"], board: ["5s", "5h", "5c"], variant: "holdem" },
@@ -136,12 +138,12 @@ golden("flush draw on 2-flush board",
 
 golden("open-ended straight draw",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~31% by the river.");
+  "Nothing made yet — ten-high. You hold an open-ended straight draw — 8 outs, ~31% by the river.");
 
 golden("gutshot straight draw",
   // 6-7-8-T with the 9 missing in the middle — exactly four cards complete.
   { user: ["7h", "Tc"], board: ["8d", "6s", "2c"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got a gutshot straight draw — 4 outs, ~16% by the river.");
+  "Nothing made yet — ten-high. You've picked up a gutshot straight draw — 4 outs, ~16% by the river.");
 
 // On the turn (4 board cards) the same draws are quoted with their one-card
 // probability, not the flop's two-card probability. Verifies drawPctText
@@ -149,32 +151,32 @@ golden("gutshot straight draw",
 
 golden("flush draw on the turn (one card to come)",
   { user: ["Jd", "9d"], board: ["6d", "Kd", "2s", "3c"], variant: "holdem" },
-  "You haven't paired anything yet — king-high. You're on a flush draw — 9 outs, ~20% by the river, but a higher flush is possible for anyone holding bigger cards in the suit. The board's connected enough that a straight or straight draw is realistic.");
+  "Nothing's connected yet — king-high. You're on a flush draw — 9 outs, ~20% by the river, though anyone with two bigger cards in the suit would outflush you. Connected enough that someone could have a straight or a straight draw.");
 
 golden("open-ended straight draw on the turn",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d", "3c"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~17% by the river. Two of one suit on the board means flush draws are live for anyone holding the suit.");
+  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~17% by the river. Two of a suit are out, so flush draws are live for anyone in that suit.");
 
 golden("three of a suit on board, user not in suit",
   { user: ["As", "Kh"], board: ["2d", "8d", "Jd"], variant: "holdem" },
-  "You haven't paired anything yet — ace-high. The board already has three of one suit — anyone holding two of that suit has made a flush.");
+  "Nothing made yet — ace-high. The board already has three of one suit — anyone holding two of that suit has made a flush.");
 
 golden("four of a suit on board, user not in suit",
   { user: ["As", "Kh"], board: ["2d", "8d", "Jd", "5d"], variant: "holdem" },
-  "You haven't paired anything yet — ace-high. The board has four of one suit — anyone holding even a single card of that suit has made a flush.");
+  "Nothing's connected yet — ace-high. With four to a suit on the board, even one card of it makes a flush.");
 
 golden("top pair with weak hole-card kicker (board outranks)",
   // K7 on KQT — the seven is in the hole but Q and T both outkick it.
   { user: ["Ks", "7h"], board: ["Kc", "Qd", "Tc"], variant: "holdem" },
-  "Top pair, kings, with the seven in the hole — a solid one-pair hand. Two of one suit on the board means flush draws are live for anyone holding the suit. The board's connected enough that a straight or straight draw is realistic.");
+  "Top pair, kings, with the seven in the hole — a good one-pair holding. Two of one suit on the board means flush draws are live for anyone holding the suit. The board is connected enough that straights and straight draws are in play.");
 
 golden("paired board, no kings in hand",
   { user: ["Ah", "Qs"], board: ["Kd", "Kc", "4s"], variant: "holdem" },
-  "The board has a pair of kings that doesn't involve your hand — you're effectively playing for kicker. The paired kings on the board mean anyone holding the case card has trips already.");
+  "The board has a pair of kings that doesn't involve your hand — what you really hold is your kicker. Those paired kings give anyone with the case card trips already.");
 
 golden("connected board, no piece",
   { user: ["Ah", "Ks"], board: ["6d", "7c", "8s"], variant: "holdem" },
-  "You haven't paired anything yet — ace-high. The board's connected enough that a straight or straight draw is realistic.");
+  "Nothing's connected yet — ace-high. Connected enough that someone could have a straight or a straight draw.");
 
 golden("made flush at showdown",
   { user: ["9d", "Jd"], board: ["2d", "5d", "7d", "Ks", "3c"], variant: "holdem" },
@@ -182,15 +184,15 @@ golden("made flush at showdown",
 
 golden("made straight at showdown",
   { user: ["Js", "Td"], board: ["9c", "8h", "7s", "2c", "3d"], variant: "holdem" },
-  "A straight — strong, though a flush can still beat you and a paired board threatens a full house.");
+  "A straight — strong, but flushes and full houses outrank it.");
 
 golden("full house — set with paired board",
   { user: ["5s", "5h"], board: ["5c", "9h", "9d", "Qs", "2c"], variant: "holdem" },
-  "A full house — almost always the winner. Quads or a higher boat are the only real threats.");
+  "A full house — very strong; bigger full houses and quads are the only worry.");
 
 golden("four of a kind",
   { user: ["Ks", "Kh"], board: ["Kc", "Kd", "7s", "2h", "3c"], variant: "holdem" },
-  "Four of a kind — almost a lock.");
+  "Four of a kind — as good as it gets, short of a straight flush.");
 
 // --- 5-Card Draw ------------------------------------------------------
 
@@ -200,7 +202,7 @@ golden("5cd: pair of aces",
 
 golden("5cd: two pair",
   { user: ["As", "Ah", "7d", "7c", "2s"], board: [], variant: "fivecard" },
-  "Two pair, aces and sevens — decent, often enough at small tables.");
+  "Two pair, aces and sevens — decent; often good enough short-handed.");
 
 golden("5cd: trips",
   { user: ["As", "Ah", "Ad", "7c", "2s"], board: [], variant: "fivecard" },
@@ -210,7 +212,7 @@ golden("5cd: trips",
 
 golden("omaha: AA double-suited preflop",
   { user: ["As", "Ah", "Ks", "Qh"], board: [], variant: "omaha" },
-  "Big pocket pair — aces in hand, double-suited. A premium Omaha starter; you'll want to see flops where the rest of your hand can connect.");
+  "Big pocket pair — aces in hand, double-suited. A top Omaha holding — look for flops your side cards can build on.");
 
 golden("omaha: tight rundown preflop",
   { user: ["9s", "8h", "7d", "6c"], board: [], variant: "omaha" },
@@ -218,15 +220,15 @@ golden("omaha: tight rundown preflop",
 
 golden("omaha: scattered hand preflop",
   { user: ["As", "9h", "5d", "2c"], board: [], variant: "omaha" },
-  "Ace-high scattered, rainbow. Hard to connect with the board cleanly — Omaha penalizes loose 4-card hands.");
+  "Ace-high scattered, rainbow. Disjointed; Omaha punishes hands that don't work together.");
 
 golden("omaha: the flush trap on the flop — 1-in-hole, 3-on-board is not a draw",
   { user: ["Ah", "Kc", "Qd", "Js"], board: ["2h", "5h", "9h"], variant: "omaha" },
-  "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board. Heads up — a single card of a 3-suited board doesn't make a flush in Omaha. You'd need 2 of that suit in your hand and you have only 1. The board has 3 of one suit — any opponent holding 2 of that suit makes a flush.");
+  "Nothing's connected yet — high card only, using exactly 2 of your hole cards plus 3 from the board. Heads up — a single card of a 3-suited board doesn't make a flush in Omaha. You'd need 2 of that suit in your hand and you have only 1. 3 of one suit are on the board; 2 in an opponent's hand make a flush.");
 
 golden("omaha: real flush draw — 2-in-hole + 2-on-board",
   { user: ["Ah", "Kh", "Qc", "Jc"], board: ["2h", "9h", "5d"], variant: "omaha" },
-  "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board. You've got an Omaha flush draw — 2 of one suit in hand backed by 2 on the board, 9 outs, ~35% by the river. Two of one suit on the board — opponents with 2 of that suit in hand have a flush draw.");
+  "Nothing made yet — high card only, using exactly 2 of your hole cards plus 3 from the board. You're on an Omaha flush draw — 2 of one suit in hand backed by 2 on the board, 9 outs, ~35% by the river. A two-suited board means anyone with 2 of that suit holds a flush draw.");
 
 // --- 7-Stud ----------------------------------------------------------
 
@@ -240,7 +242,7 @@ golden("7-stud: pair on 3rd street",
 
 golden("7-stud: three to a flush",
   { user: ["Jd", "8d", "3d"], board: [], variant: "sevenstud" },
-  "Three to a flush — a live drawing hand.");
+  "Three to a flush — a real drawing hand.");
 
 /* ============================================================
  * (2) STRUCTURAL INVARIANTS — claims must match the cards.
@@ -402,6 +404,95 @@ test("invariant: 'gutshot straight draw' ⟹ exactly 4 of 5 in a window with an 
 });
 
 /* ============================================================
+ * (4) GRAMMAR + VARIATION INVARIANTS (multi-seed)
+ *     The paraphrase grammar (#39) combines fragments by a seeded RNG. The
+ *     surface form varies with the seed, so for EVERY seed the output must
+ *     still be grammatical, internally consistent, within budget, and (for
+ *     converted surfaces) genuinely vary. These run over many seeds so the
+ *     combinatorial surface forms are all exercised, not just seed 0.
+ * ============================================================ */
+
+const SEEDS = Array.from({ length: 60 }, (_, i) => i);
+const LENGTH_BUDGET = 500; // a whole street paragraph (made + draws + threats)
+
+// Combinations that would only arise from a bad fragment pairing — a hand can't
+// be both. Authored fragments must never let these co-occur.
+const CONTRADICTIONS = [
+  ["premium", "easily dominated"],
+  ["the nuts", "vulnerable"],
+  ["unbeatable", "can be beaten"],
+  ["the strongest", "weak"],
+];
+
+/** @param {string} s @returns {string[]} list of grammar problems (empty = clean) */
+function grammarProblems(s) {
+  const problems = [];
+  if (!s) return ["empty output"];
+  if (/ {2,}/.test(s)) problems.push("double space");
+  if (/\s[,.;:!?]/.test(s)) problems.push("space before punctuation");
+  if (!/[.!?…]$/.test(s.trim())) problems.push("no terminal punctuation");
+  const re = /\b(an?)\s+([A-Za-z][\w'-]*)/gi;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const want = articleFor(m[2]);
+    if (m[1].toLowerCase() !== want) problems.push(`"${m[1]} ${m[2]}" should be "${want} ${m[2]}"`);
+  }
+  return problems;
+}
+
+/** @param {{user: string[], board: string[], variant: string}} f @param {number} seed */
+function proseAtSeed(f, seed) {
+  setSessionSeed(seed);
+  return proseFor(f);
+}
+
+test("invariant: every seed produces grammatical prose", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed);
+      const problems = grammarProblems(prose);
+      assert.equal(problems.length, 0, `${f.name} @seed ${seed}: ${problems.join("; ")}\n  ${prose}`);
+    }
+  }
+});
+
+test("invariant: no contradictory claims co-occur, any seed", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed).toLowerCase();
+      for (const [a, b] of CONTRADICTIONS) {
+        assert.ok(!(prose.includes(a) && prose.includes(b)),
+          `${f.name} @seed ${seed}: contradictory "${a}" + "${b}"`);
+      }
+    }
+  }
+});
+
+test("invariant: every seed stays within the length budget", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed);
+      assert.ok(prose.length <= LENGTH_BUDGET,
+        `${f.name} @seed ${seed}: ${prose.length} chars > ${LENGTH_BUDGET}`);
+    }
+  }
+});
+
+// The whole point of #39: a converted surface must actually vary its surface
+// form across sessions. Every Hold'em fixture here flows through a converted
+// producer (pre-flop read or made-hand read), so each must yield several
+// distinct renderings over the seed sweep — proving the grammar isn't
+// collapsing to one string.
+test("variation: converted Hold'em surfaces produce multiple distinct forms", () => {
+  const CONVERTED = STRUCTURAL_FIXTURES.filter(f => f.variant === "holdem");
+  for (const f of CONVERTED) {
+    const forms = new Set(SEEDS.map(seed => proseAtSeed(f, seed)));
+    assert.ok(forms.size >= 3,
+      `${f.name}: only ${forms.size} distinct form(s) across ${SEEDS.length} seeds — not varying`);
+  }
+});
+
+/* ============================================================
  * (3) SIMULATOR CROSS-CHECK — prose lean must match math.
  * ============================================================ */
 
@@ -441,13 +532,14 @@ test("cross-check: 'premium' pre-flop hands beat fair share at a full 6-handed t
 });
 
 test("cross-check: a set on the flop has >55% heads-up equity", () => {
-  // "Well hidden, very strong" — back that up with the math.
+  // The set tail varies ("very strong" / "powerful" / "a big hand") — back the
+  // strength claim, whichever phrasing rendered, up with the math.
   const { winRate } = simulate(hand("5s", "5h"), hand("5c", "9h", "Qs"), 1, "holdem", SIM_ITERATIONS);
   const prose = proseFor({ user: ["5s", "5h"], board: ["5c", "9h", "Qs"], variant: "holdem" });
   assert.match(prose, /A set of fives/);
-  assert.match(prose, /very strong/);
+  assert.match(prose, /strong|powerful|big hand/i);
   assert.ok(winRate > 0.55,
-    `set of fives heads-up equity ${winRate.toFixed(3)} too low for "very strong"`);
+    `set of fives heads-up equity ${winRate.toFixed(3)} too low for a strong-hand claim`);
 });
 
 test("cross-check: heads-up note is actually emitted, and the math backs it up", () => {
@@ -534,7 +626,9 @@ test("recap: roughly-flat equity case uses 'steady' framing", () => {
   ];
   const recap = recapHand({ trajectory, variant: "holdem" });
   assert.ok(recap);
-  assert.match(recap, /roughly steady/);
+  // The "flat equity" lead varies; any of its phrasings is acceptable.
+  assert.match(recap, /roughly steady|barely moved|roughly flat|little in your equity changed/i);
+  assert.match(recap, /\(40% → 39%\)/);
 });
 
 test("recap: returns null when there's no trajectory to synthesize", () => {
