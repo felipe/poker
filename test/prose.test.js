@@ -84,6 +84,11 @@ test("assemble: fixes a/an agreement both directions, preserving case", () => {
   assert.equal(assemble(["A ace plays"]), "An ace plays.");
 });
 
+test("assemble: respects sound exceptions (one / hour), not just spelling", () => {
+  assert.equal(assemble(["a one-pair hand"]), "A one-pair hand.");
+  assert.equal(assemble(["wait a hour"]), "Wait an hour.");
+});
+
 test("voiceFor is one of the registers and stable per session seed", () => {
   setSessionSeed(0);
   const v = voiceFor();

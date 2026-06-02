@@ -82,15 +82,29 @@ export function maybe(rng, p, frag) {
   return rng() < p ? frag : "";
 }
 
+// Words whose spelling and sound disagree, so the bare vowel rule gets them
+// wrong. "one"/"once" look vowel-ish but sound like "w"; "hour"/"honest" start
+// with a silent "h". Small list — enough for the card vocabulary.
+const SOUNDS_CONSONANT = /^(one|once)/i;
+const SOUNDS_VOWEL = /^(hour|honest|honou?r|heir)/i;
+
+/** a/an for `word` by sound, with the few spelling/sound exceptions. @param {string} word */
+export function articleFor(word) {
+  if (SOUNDS_CONSONANT.test(word)) return "a";
+  if (SOUNDS_VOWEL.test(word)) return "an";
+  return aOrAn(word);
+}
+
 /**
- * Naive a/an agreement using the same vowel rule as the rest of the explainer
- * (`aOrAn`), so fragments can write "a"/"an" loosely and still read right. Fine
- * for the controlled card vocabulary; preserves the article's capitalization.
+ * Fix a/an agreement so fragments can write "a"/"an" loosely and still read
+ * right (essential where the next word is a variable rank: "a [ace|king]").
+ * Preserves the article's capitalization. Uses `articleFor`, which knows the
+ * sound exceptions, so it won't "correct" a deliberate "a one-pair hand".
  * @param {string} s
  */
 function fixArticles(s) {
   return s.replace(/\b(an?)\s+([A-Za-z]\w*)/gi, (_m, art, word) => {
-    let fixed = aOrAn(word);
+    let fixed = articleFor(word);
     if (art[0] === art[0].toUpperCase()) fixed = fixed[0].toUpperCase() + fixed.slice(1);
     return `${fixed} ${word}`;
   });

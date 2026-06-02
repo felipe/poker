@@ -16,6 +16,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
 import { explain, streetSummary, explainTrajectory, recapHand, betterHandsCallout } from "../js/explain.js";
+import { setSessionSeed, articleFor } from "../js/prose.js";
 import { hand } from "./_cards.js";
 
 const SIM_ITERATIONS = 4000;
@@ -31,6 +32,7 @@ const SIM_ITERATIONS = 4000;
  */
 function golden(name, setup, expected) {
   test(`golden: ${name}`, () => {
+    setSessionSeed(0); // goldens are the seed-0 surface form; variation is checked separately
     const prose = streetSummary({
       userCards: hand(...setup.user),
       boardCards: hand(...setup.board),
@@ -398,6 +400,81 @@ test("invariant: 'gutshot straight draw' ⟹ exactly 4 of 5 in a window with an 
       if (present === 4 && missing !== top && missing !== top - 4) found = true;
     }
     assert.ok(found, `${f.name}: claims gutshot but no inside-miss-4-of-5 window exists`);
+  }
+});
+
+/* ============================================================
+ * (4) GRAMMAR + VARIATION INVARIANTS (multi-seed)
+ *     The paraphrase grammar (#39) combines fragments by a seeded RNG. The
+ *     surface form varies with the seed, so for EVERY seed the output must
+ *     still be grammatical, internally consistent, within budget, and (for
+ *     converted surfaces) genuinely vary. These run over many seeds so the
+ *     combinatorial surface forms are all exercised, not just seed 0.
+ * ============================================================ */
+
+const SEEDS = Array.from({ length: 60 }, (_, i) => i);
+const LENGTH_BUDGET = 500; // a whole street paragraph (made + draws + threats)
+
+// Combinations that would only arise from a bad fragment pairing — a hand can't
+// be both. Authored fragments must never let these co-occur.
+const CONTRADICTIONS = [
+  ["premium", "easily dominated"],
+  ["the nuts", "vulnerable"],
+  ["unbeatable", "can be beaten"],
+  ["the strongest", "weak"],
+];
+
+/** @param {string} s @returns {string[]} list of grammar problems (empty = clean) */
+function grammarProblems(s) {
+  const problems = [];
+  if (!s) return ["empty output"];
+  if (/ {2,}/.test(s)) problems.push("double space");
+  if (/\s[,.;:!?]/.test(s)) problems.push("space before punctuation");
+  if (!/[.!?…]$/.test(s.trim())) problems.push("no terminal punctuation");
+  const re = /\b(an?)\s+([A-Za-z][\w'-]*)/gi;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const want = articleFor(m[2]);
+    if (m[1].toLowerCase() !== want) problems.push(`"${m[1]} ${m[2]}" should be "${want} ${m[2]}"`);
+  }
+  return problems;
+}
+
+/** @param {{user: string[], board: string[], variant: string}} f @param {number} seed */
+function proseAtSeed(f, seed) {
+  setSessionSeed(seed);
+  return proseFor(f);
+}
+
+test("invariant: every seed produces grammatical prose", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed);
+      const problems = grammarProblems(prose);
+      assert.equal(problems.length, 0, `${f.name} @seed ${seed}: ${problems.join("; ")}\n  ${prose}`);
+    }
+  }
+});
+
+test("invariant: no contradictory claims co-occur, any seed", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed).toLowerCase();
+      for (const [a, b] of CONTRADICTIONS) {
+        assert.ok(!(prose.includes(a) && prose.includes(b)),
+          `${f.name} @seed ${seed}: contradictory "${a}" + "${b}"`);
+      }
+    }
+  }
+});
+
+test("invariant: every seed stays within the length budget", () => {
+  for (const f of STRUCTURAL_FIXTURES) {
+    for (const seed of SEEDS) {
+      const prose = proseAtSeed(f, seed);
+      assert.ok(prose.length <= LENGTH_BUDGET,
+        `${f.name} @seed ${seed}: ${prose.length} chars > ${LENGTH_BUDGET}`);
+    }
   }
 });
 
