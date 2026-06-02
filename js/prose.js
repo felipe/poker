@@ -77,13 +77,16 @@ export function rngFor(...parts) {
 }
 
 /**
- * Pick one element of a non-empty pool, deterministically from `rng`.
+ * Pick one element of a non-empty pool, deterministically from `rng`. An empty
+ * pool is a programming error (a fragment table built wrong), so fail loudly
+ * rather than leak `undefined` into user-facing prose.
  * @template T
  * @param {() => number} rng
  * @param {T[]} pool
  * @returns {T}
  */
 export function pick(rng, pool) {
+  if (!pool.length) throw new Error("pick: empty pool");
   return pool[(rng() * pool.length) | 0];
 }
 

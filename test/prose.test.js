@@ -66,3 +66,7 @@ test("pick returns a pool member, deterministically from the rng", () => {
   assert.deepEqual(picks, [pick(rng2, pool), pick(rng2, pool), pick(rng2, pool)]);
 });
 
+test("pick throws on an empty pool instead of leaking undefined", () => {
+  assert.throws(() => pick(mulberry32(0), []), /empty pool/);
+});
+
