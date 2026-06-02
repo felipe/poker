@@ -202,7 +202,7 @@ golden("5cd: pair of aces",
 
 golden("5cd: two pair",
   { user: ["As", "Ah", "7d", "7c", "2s"], board: [], variant: "fivecard" },
-  "Two pair, aces and sevens — decent, often enough at small tables.");
+  "Two pair, aces and sevens — decent; often good enough short-handed.");
 
 golden("5cd: trips",
   { user: ["As", "Ah", "Ad", "7c", "2s"], board: [], variant: "fivecard" },
@@ -242,7 +242,7 @@ golden("7-stud: pair on 3rd street",
 
 golden("7-stud: three to a flush",
   { user: ["Jd", "8d", "3d"], board: [], variant: "sevenstud" },
-  "Three to a flush — a live drawing hand.");
+  "Three to a flush — a real drawing hand.");
 
 /* ============================================================
  * (2) STRUCTURAL INVARIANTS — claims must match the cards.
