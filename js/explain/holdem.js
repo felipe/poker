@@ -237,6 +237,56 @@ const PREFLOP_TAILS = {
   ],
 };
 
+// Draw lines keep their factual stem fixed — "You're on a flush draw", the out
+// count, the percentage, and the draw-type tokens the invariants anchor on —
+// and vary only the lead verb and the trailing caveat.
+const DRAW_FRAGS = {
+  flushCaveat: [
+    "but a higher flush is possible for anyone holding bigger cards in the suit.",
+    "though anyone with two bigger cards in the suit would outflush you.",
+    "but beware a higher flush from bigger cards in the same suit.",
+    "with the caveat that a bigger flush is always possible.",
+  ],
+  nutFlourish: [
+    "",
+    " Nothing beats it if it gets there.",
+    " The best flush draw there is.",
+    "",
+  ],
+  straightLead: [
+    "You've got",
+    "You're on",
+    "You hold",
+    "You've picked up",
+  ],
+};
+
+// Board-threat sentences are independent whole sentences, varied as units. Each
+// variant keeps the key noun ("flush", "trips", "straight") so the glossary
+// still tokenizes it.
+const THREAT_FRAGS = {
+  threeSuit: [
+    "The board already has three of one suit — anyone holding two of that suit has made a flush.",
+    "Three of one suit are out — anyone with two cards in it already has a flush.",
+    "With three of a suit on the board, two matching cards make a flush for someone.",
+  ],
+  fourSuit: [
+    "The board has four of one suit — anyone holding even a single card of that suit has made a flush.",
+    "Four of one suit are out — a single matching card gives someone a flush.",
+    "With four to a suit on the board, even one card of it makes a flush.",
+  ],
+  twoSuit: [
+    "Two of one suit on the board means flush draws are live for anyone holding the suit.",
+    "Two of a suit are out, so flush draws are live for anyone in that suit.",
+    "A two-flush board means anyone holding the suit has a flush draw.",
+  ],
+  connected: [
+    "The board's connected enough that a straight or straight draw is realistic.",
+    "The board is connected enough that straights and straight draws are in play.",
+    "Connected enough that someone could have a straight or a straight draw.",
+  ],
+};
+
 /**
  * Single-snapshot Hold'em read: made hand, then any draws and board threats.
  * @param {Card[]} user
@@ -669,6 +719,7 @@ function holdemDraws(user, board) {
   const all = user.concat(board);
   const category = categoryOf(all);
   if (category >= 4) return null; // Already on a straight or better — no point chasing.
+  const rng = rngFor(`holdem|draws|${cardsKey(user)}|${cardsKey(board)}`);
 
   /** @type {string[]} */ const parts = [];
   const sc = suitCounts(all);
@@ -678,9 +729,9 @@ function holdemDraws(user, board) {
       if (userInSuit.length > 0) {
         const pct = drawPctText(9, board.length);
         if (userInSuit.some(c => c.rank === 14)) {
-          parts.push(`You're drawing to the nut flush — 9 outs, ${pct} by the river.`);
+          parts.push(`You're drawing to the nut flush — 9 outs, ${pct} by the river.${pick(rng, DRAW_FRAGS.nutFlourish)}`);
         } else {
-          parts.push(`You're on a flush draw — 9 outs, ${pct} by the river, but a higher flush is possible for anyone holding bigger cards in the suit.`);
+          parts.push(`You're on a flush draw — 9 outs, ${pct} by the river, ${pick(rng, DRAW_FRAGS.flushCaveat)}`);
         }
       }
       break;
@@ -722,8 +773,8 @@ function holdemDraws(user, board) {
     }
   }
 
-  if (oesd) parts.push(`You've got an open-ended straight draw — 8 outs, ${drawPctText(8, board.length)} by the river.`);
-  else if (gutshot) parts.push(`You've got a gutshot straight draw — 4 outs, ${drawPctText(4, board.length)} by the river.`);
+  if (oesd) parts.push(`${pick(rng, DRAW_FRAGS.straightLead)} an open-ended straight draw — 8 outs, ${drawPctText(8, board.length)} by the river.`);
+  else if (gutshot) parts.push(`${pick(rng, DRAW_FRAGS.straightLead)} a gutshot straight draw — 4 outs, ${drawPctText(4, board.length)} by the river.`);
 
   return parts.length ? parts.join(" ") : null;
 }
@@ -741,6 +792,7 @@ function holdemBoardThreats(user, board) {
   const bSC = suitCounts(board);
   const bRC = rankCounts(board);
   const category = categoryOf(user.concat(board));
+  const rng = rngFor(`holdem|threats|${cardsKey(user)}|${cardsKey(board)}`);
 
   const moreToCome = board.length < 5;
 
@@ -757,10 +809,10 @@ function holdemBoardThreats(user, board) {
       const userInSuit = user.filter(c => c.suit === flushSuit).length;
       if (userInSuit === 0) {
         if (flushCount === 3) {
-          parts.push("The board already has three of one suit — anyone holding two of that suit has made a flush.");
+          parts.push(pick(rng, THREAT_FRAGS.threeSuit));
         } else {
           // 4 on board.
-          parts.push("The board has four of one suit — anyone holding even a single card of that suit has made a flush.");
+          parts.push(pick(rng, THREAT_FRAGS.fourSuit));
         }
       }
       // userInSuit >= 1 means it's our flush draw (or our flush, in which
@@ -772,7 +824,7 @@ function holdemBoardThreats(user, board) {
       if (twoSuit >= 0) {
         const userInSuit = user.filter(c => c.suit === twoSuit).length;
         if (userInSuit === 0) {
-          parts.push("Two of one suit on the board means flush draws are live for anyone holding the suit.");
+          parts.push(pick(rng, THREAT_FRAGS.twoSuit));
         }
       }
     }
@@ -783,7 +835,12 @@ function holdemBoardThreats(user, board) {
     for (let r = 2; r <= 14; r++) if (bRC[r] === 2) boardPair = r;
     // Board-trips are already covered by the made-hand line, so skip here.
     if (boardPair && category < 3) {
-      parts.push(`The paired ${rankPlural(boardPair)} on the board mean anyone holding the case card has trips already.`);
+      const rp = rankPlural(boardPair);
+      parts.push(pick(rng, [
+        `The paired ${rp} on the board mean anyone holding the case card has trips already.`,
+        `Those paired ${rp} give anyone with the case card trips already.`,
+        `Watch the paired ${rp}: anyone holding the last one has trips.`,
+      ]));
     }
   }
 
@@ -796,7 +853,7 @@ function holdemBoardThreats(user, board) {
       if (count >= 3) { connected = true; break; }
     }
     if (connected) {
-      parts.push("The board's connected enough that a straight or straight draw is realistic.");
+      parts.push(pick(rng, THREAT_FRAGS.connected));
     }
   }
 

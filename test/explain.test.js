@@ -106,7 +106,7 @@ golden("AA overpair on rainbow flop",
 
 golden("AA overpair, 2-flush threat",
   { user: ["As", "Ah"], board: ["7d", "8d", "3c"], variant: "holdem" },
-  "Your pocket aces are an overpair to the board — a commanding overpair. Two of one suit on the board means flush draws are live for anyone holding the suit.");
+  "Your pocket aces are an overpair to the board — a commanding overpair. Two of a suit are out, so flush draws are live for anyone in that suit.");
 
 golden("AKo top pair, ace kicker",
   { user: ["As", "Kh"], board: ["Ac", "7d", "2s"], variant: "holdem" },
@@ -138,12 +138,12 @@ golden("flush draw on 2-flush board",
 
 golden("open-ended straight draw",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d"], variant: "holdem" },
-  "Nothing made yet — ten-high. You've got an open-ended straight draw — 8 outs, ~31% by the river.");
+  "Nothing made yet — ten-high. You hold an open-ended straight draw — 8 outs, ~31% by the river.");
 
 golden("gutshot straight draw",
   // 6-7-8-T with the 9 missing in the middle — exactly four cards complete.
   { user: ["7h", "Tc"], board: ["8d", "6s", "2c"], variant: "holdem" },
-  "Nothing made yet — ten-high. You've got a gutshot straight draw — 4 outs, ~16% by the river.");
+  "Nothing made yet — ten-high. You've picked up a gutshot straight draw — 4 outs, ~16% by the river.");
 
 // On the turn (4 board cards) the same draws are quoted with their one-card
 // probability, not the flop's two-card probability. Verifies drawPctText
@@ -151,11 +151,11 @@ golden("gutshot straight draw",
 
 golden("flush draw on the turn (one card to come)",
   { user: ["Jd", "9d"], board: ["6d", "Kd", "2s", "3c"], variant: "holdem" },
-  "Nothing's connected yet — king-high. You're on a flush draw — 9 outs, ~20% by the river, but a higher flush is possible for anyone holding bigger cards in the suit. The board's connected enough that a straight or straight draw is realistic.");
+  "Nothing's connected yet — king-high. You're on a flush draw — 9 outs, ~20% by the river, though anyone with two bigger cards in the suit would outflush you. Connected enough that someone could have a straight or a straight draw.");
 
 golden("open-ended straight draw on the turn",
   { user: ["9h", "Th"], board: ["7c", "8s", "2d", "3c"], variant: "holdem" },
-  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~17% by the river. Two of one suit on the board means flush draws are live for anyone holding the suit.");
+  "You haven't paired anything yet — ten-high. You've got an open-ended straight draw — 8 outs, ~17% by the river. Two of a suit are out, so flush draws are live for anyone in that suit.");
 
 golden("three of a suit on board, user not in suit",
   { user: ["As", "Kh"], board: ["2d", "8d", "Jd"], variant: "holdem" },
@@ -163,20 +163,20 @@ golden("three of a suit on board, user not in suit",
 
 golden("four of a suit on board, user not in suit",
   { user: ["As", "Kh"], board: ["2d", "8d", "Jd", "5d"], variant: "holdem" },
-  "Nothing's connected yet — ace-high. The board has four of one suit — anyone holding even a single card of that suit has made a flush.");
+  "Nothing's connected yet — ace-high. With four to a suit on the board, even one card of it makes a flush.");
 
 golden("top pair with weak hole-card kicker (board outranks)",
   // K7 on KQT — the seven is in the hole but Q and T both outkick it.
   { user: ["Ks", "7h"], board: ["Kc", "Qd", "Tc"], variant: "holdem" },
-  "Top pair, kings, with the seven in the hole — a good one-pair holding. Two of one suit on the board means flush draws are live for anyone holding the suit. The board's connected enough that a straight or straight draw is realistic.");
+  "Top pair, kings, with the seven in the hole — a good one-pair holding. Two of one suit on the board means flush draws are live for anyone holding the suit. The board is connected enough that straights and straight draws are in play.");
 
 golden("paired board, no kings in hand",
   { user: ["Ah", "Qs"], board: ["Kd", "Kc", "4s"], variant: "holdem" },
-  "The board has a pair of kings that doesn't involve your hand — what you really hold is your kicker. The paired kings on the board mean anyone holding the case card has trips already.");
+  "The board has a pair of kings that doesn't involve your hand — what you really hold is your kicker. Those paired kings give anyone with the case card trips already.");
 
 golden("connected board, no piece",
   { user: ["Ah", "Ks"], board: ["6d", "7c", "8s"], variant: "holdem" },
-  "Nothing's connected yet — ace-high. The board's connected enough that a straight or straight draw is realistic.");
+  "Nothing's connected yet — ace-high. Connected enough that someone could have a straight or a straight draw.");
 
 golden("made flush at showdown",
   { user: ["9d", "Jd"], board: ["2d", "5d", "7d", "Ks", "3c"], variant: "holdem" },
