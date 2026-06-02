@@ -183,7 +183,7 @@ function playerCountLine(n) {
   // Keyed by table size, so the table-size note is stable within a session but
   // varies across sessions. The heads-up branch keeps "Heads-up, weaker hands
   // gain value" in every variant — the explainer cross-check anchors on it.
-  const rng = rngFor(`players|${n}`);
+  const rng = rngFor("players", n);
   if (n === 2) return pick(rng, [
     "Heads-up, weaker hands gain value — fewer ways for an opponent to have you beat.",
     "Heads-up, weaker hands gain value; there's only one opponent who can have you beat.",

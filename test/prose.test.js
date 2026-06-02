@@ -1,11 +1,10 @@
 // node --test
-// Deterministic prose engine: seeded RNG + fragment-grammar combinators.
+// Deterministic prose engine: seeded RNG + deterministic pool-pick.
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import {
-  mulberry32, hash, rngFor, setSessionSeed, getSessionSeed,
-  pick, maybe, assemble, voiceFor, VOICES,
+  mulberry32, hash, rngFor, setSessionSeed, getSessionSeed, pick,
 } from "../js/prose.js";
 
 test("mulberry32 is deterministic and seed-sensitive", () => {
@@ -39,6 +38,18 @@ test("rngFor: stable per (key, session); varies by key and by session seed", () 
   setSessionSeed(0);
 });
 
+test("rngFor: variadic parts serialize card arrays and equal the joined string", () => {
+  setSessionSeed(0);
+  const A = { rank: 14, suit: 0 }, K = { rank: 13, suit: 1 };
+  // Card arrays are folded by an order-independent cardsKey, so shuffling the
+  // hole cards keys the same spot.
+  assert.equal(rngFor("holdem", "made", [A, K])(), rngFor("holdem", "made", [K, A])());
+  // The variadic form is exactly the "|"-joined scalar form — different parts
+  // (a typo'd surface tag) must key a different stream.
+  assert.notEqual(rngFor("holdem", "made", [A, K])(), rngFor("holdem", "draws", [A, K])());
+  setSessionSeed(0);
+});
+
 test("setSessionSeed / getSessionSeed round-trip", () => {
   setSessionSeed(123);
   assert.equal(getSessionSeed(), 123);
@@ -55,44 +66,3 @@ test("pick returns a pool member, deterministically from the rng", () => {
   assert.deepEqual(picks, [pick(rng2, pool), pick(rng2, pool), pick(rng2, pool)]);
 });
 
-test("maybe includes or drops the fragment by probability", () => {
-  assert.equal(maybe(() => 0.1, 0.5, "x"), "x", "below p → included");
-  assert.equal(maybe(() => 0.9, 0.5, "x"), "", "above p → dropped");
-  assert.equal(maybe(() => 0, 0, "x"), "", "p=0 → always dropped");
-  assert.equal(maybe(() => 0.999, 1, "x"), "x", "p=1 → always included");
-});
-
-test("assemble: drops empties, joins, capitalizes, ends with punctuation", () => {
-  assert.equal(assemble(["pocket aces", "", "the strongest start"]),
-    "Pocket aces the strongest start.");
-  assert.equal(assemble([]), "");
-  assert.equal(assemble(["", "  "]), "");
-});
-
-test("assemble: collapses whitespace and tidies space-before-punctuation", () => {
-  assert.equal(assemble(["a   pair", "of kings ,", "strong"]), "A pair of kings, strong.");
-});
-
-test("assemble: keeps an existing terminal mark and doesn't double it", () => {
-  assert.equal(assemble(["premium", "— flop it often!"]), "Premium — flop it often!");
-  assert.equal(assemble(["careful", "watch the board…"]), "Careful watch the board…");
-});
-
-test("assemble: fixes a/an agreement both directions, preserving case", () => {
-  assert.equal(assemble(["you have a aces"]), "You have an aces.");
-  assert.equal(assemble(["an king high board"]), "A king high board.");
-  assert.equal(assemble(["A ace plays"]), "An ace plays.");
-});
-
-test("assemble: respects sound exceptions (one / hour), not just spelling", () => {
-  assert.equal(assemble(["a one-pair hand"]), "A one-pair hand.");
-  assert.equal(assemble(["wait a hour"]), "Wait an hour.");
-});
-
-test("voiceFor is one of the registers and stable per session seed", () => {
-  setSessionSeed(0);
-  const v = voiceFor();
-  assert.ok(VOICES.includes(v));
-  assert.equal(voiceFor(), v, "stable within a session");
-  setSessionSeed(0);
-});

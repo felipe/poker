@@ -4,7 +4,7 @@
 // then the made hand once you hold five.
 
 import { rankName, rankPlural, rankCounts, suitCounts, categoryOf } from "./core.js";
-import { rngFor, cardsKey, pick } from "../prose.js";
+import { rngFor, pick } from "../prose.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
 
@@ -28,7 +28,7 @@ const DRAW_TAILS = {
 
 /** @param {Card[]} cards */
 export function noBoardRead(cards) {
-  const rng = rngFor(`draw|read|${cardsKey(cards)}`);
+  const rng = rngFor("draw", "read", cards);
   if (cards.length < 5) {
     const rc = rankCounts(cards);
     const sc = suitCounts(cards);

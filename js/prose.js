@@ -1,7 +1,8 @@
 // @ts-check
-// Deterministic prose engine: a seeded RNG plus fragment-grammar combinators, so
-// the explainer can vary its surface wording without an LLM and without losing
-// reproducibility. Pure and DOM-free.
+// Deterministic prose engine: a seeded RNG and a pool-pick, so the explainer can
+// vary its surface wording without an LLM and without losing reproducibility.
+// Pure and DOM-free. Surfaces own their fragment pools; this is just the
+// per-situation RNG (rngFor) and the deterministic chooser (pick).
 //
 // Variety comes from a per-session seed XOR'd with a per-situation key: the same
 // (session, cards) always renders the same prose — so tests pin it with a fixed
@@ -49,24 +50,30 @@ export function setSessionSeed(n) { sessionSeed = n >>> 0; }
 export function getSessionSeed() { return sessionSeed; }
 
 /**
- * A PRNG for one situation: folds the situation key together with the session
- * seed, so the same spot in the same session is stable, and different spots
- * (or sessions) diverge.
- * @param {string} key  e.g. "holdem|made|AsKh|QdJc2s"
- * @returns {() => number}
- */
-export function rngFor(key) {
-  return mulberry32(hash(key) ^ sessionSeed);
-}
-
-/**
- * A stable, order-independent key for a set of cards — folded into a situation
- * key so the same cards always seed the same way.
+ * A stable, order-independent key for a set of cards, so the same cards always
+ * seed the same way. Private — callers pass card arrays straight to rngFor.
  * @param {{rank:number, suit:number}[]} cards
  * @returns {string}
  */
-export function cardsKey(cards) {
+function cardsKey(cards) {
   return cards.map(c => c.rank * 4 + c.suit).sort((a, b) => a - b).join(".");
+}
+
+/**
+ * A PRNG for one situation, derived from the situation's key parts folded with
+ * the session seed: the same spot in the same session is stable, different spots
+ * (or sessions) diverge. Card arrays are serialized via cardsKey, scalars
+ * stringified, then joined with "|" — so a call reads as its parts rather than a
+ * hand-built template literal:
+ *
+ *   rngFor("holdem", "made", user, board)   // not `holdem|made|${cardsKey(user)}|...`
+ *
+ * @param {...(string|number|{rank:number,suit:number}[])} parts
+ * @returns {() => number}
+ */
+export function rngFor(...parts) {
+  const key = parts.map(p => Array.isArray(p) ? cardsKey(p) : String(p)).join("|");
+  return mulberry32(hash(key) ^ sessionSeed);
 }
 
 /**
@@ -80,71 +87,19 @@ export function pick(rng, pool) {
   return pool[(rng() * pool.length) | 0];
 }
 
-/**
- * Include `frag` with probability `p`, else "" — the "drop a fragment" lever that
- * varies sentence shape (terse vs. wordy) rather than just vocabulary.
- * @param {() => number} rng
- * @param {number} p     0..1
- * @param {string} frag
- * @returns {string}
- */
-export function maybe(rng, p, frag) {
-  return rng() < p ? frag : "";
-}
-
 // Words whose spelling and sound disagree, so the bare vowel rule gets them
 // wrong. "one"/"once" look vowel-ish but sound like "w"; "hour"/"honest" start
 // with a silent "h". Small list — enough for the card vocabulary.
 const SOUNDS_CONSONANT = /^(one|once)/i;
 const SOUNDS_VOWEL = /^(hour|honest|honou?r|heir)/i;
 
-/** a/an for `word` by sound, with the few spelling/sound exceptions. @param {string} word */
+/**
+ * a/an for `word` by sound, with the few spelling/sound exceptions. The
+ * faithfulness suite uses this to check article agreement across every seed.
+ * @param {string} word
+ */
 export function articleFor(word) {
   if (SOUNDS_CONSONANT.test(word)) return "a";
   if (SOUNDS_VOWEL.test(word)) return "an";
   return aOrAn(word);
-}
-
-/**
- * Fix a/an agreement so fragments can write "a"/"an" loosely and still read
- * right (essential where the next word is a variable rank: "a [ace|king]").
- * Preserves the article's capitalization. Uses `articleFor`, which knows the
- * sound exceptions, so it won't "correct" a deliberate "a one-pair hand".
- * @param {string} s
- */
-function fixArticles(s) {
-  return s.replace(/\b(an?)\s+([A-Za-z]\w*)/gi, (_m, art, word) => {
-    let fixed = articleFor(word);
-    if (art[0] === art[0].toUpperCase()) fixed = fixed[0].toUpperCase() + fixed.slice(1);
-    return `${fixed} ${word}`;
-  });
-}
-
-/**
- * Assemble fragments into one clean sentence: drop empties, collapse whitespace,
- * fix a/an agreement, capitalize the first letter, tidy space-before-punctuation,
- * and ensure terminal punctuation.
- * @param {string[]} parts
- * @returns {string}
- */
-export function assemble(parts) {
-  let s = parts.filter(p => p && p.trim()).join(" ").replace(/\s+/g, " ").trim();
-  if (!s) return "";
-  s = fixArticles(s);
-  s = s.replace(/\s+([,.;:!?])/g, "$1");
-  s = s.charAt(0).toUpperCase() + s.slice(1);
-  if (!/[.!?…]$/.test(s)) s += ".";
-  return s;
-}
-
-/** The three voice registers a session can speak in. @type {const} */
-export const VOICES = /** @type {const} */ (["formal", "casual", "terse"]);
-
-/**
- * The session's voice register — one stable choice per session, derived from the
- * session seed so it's deterministic and reproducible under a fixed seed.
- * @returns {"formal"|"casual"|"terse"}
- */
-export function voiceFor() {
-  return VOICES[((hash("voice") ^ sessionSeed) >>> 0) % VOICES.length];
 }

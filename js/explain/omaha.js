@@ -15,7 +15,7 @@
 // specific straight-draw out counts are a follow-up.
 
 import { rankName, rankPlural, rankCounts, suitCounts, categoryFor, drawPctText } from "./core.js";
-import { rngFor, cardsKey, pick } from "../prose.js";
+import { rngFor, pick } from "../prose.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
 
@@ -88,7 +88,7 @@ export function omahaSnapshot(user, board) {
 
 /** @param {Card[]} hole */
 function omahaPreflop(hole) {
-  const rng = rngFor(`omaha|preflop|${cardsKey(hole)}`);
+  const rng = rngFor("omaha", "preflop", hole);
   const rc = rankCounts(hole);
   const sc = suitCounts(hole);
   // Pairs first — they anchor the hand.
@@ -153,7 +153,7 @@ function omahaPreflop(hole) {
  * @param {Card[]} board
  */
 function omahaMadeHand(category, user, board) {
-  const rng = rngFor(`omaha|made|${cardsKey(user)}|${cardsKey(board)}`);
+  const rng = rngFor("omaha", "made", user, board);
   if (category === 0) return `${pick(rng, OMAHA_MADE.highLead)} — high card only, using exactly 2 of your hole cards plus 3 from the board.`;
   if (category === 1) return `Your best 2-hole + 3-board combo makes one pair — ${pick(rng, OMAHA_MADE.onePair)}`;
   if (category === 2) return `Two pair through the Omaha rule — ${pick(rng, OMAHA_MADE.twoPair)}`;
@@ -178,7 +178,7 @@ function omahaMadeHand(category, user, board) {
 function omahaDraws(user, board, category) {
   if (board.length >= 5) return null;
   if (category >= 5) return null;
-  const rng = rngFor(`omaha|draws|${cardsKey(user)}|${cardsKey(board)}`);
+  const rng = rngFor("omaha", "draws", user, board);
 
   /** @type {string[]} */ const parts = [];
   const userSC = suitCounts(user);
@@ -221,7 +221,7 @@ function omahaBoardThreats(user, board, category) {
   const bSC = suitCounts(board);
   const bRC = rankCounts(board);
   const moreToCome = board.length < 5;
-  const rng = rngFor(`omaha|threats|${cardsKey(user)}|${cardsKey(board)}`);
+  const rng = rngFor("omaha", "threats", user, board);
 
   if (category < 5) {
     let maxBoardSuit = 0;
