@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_config_9c89bf110d",
+  "title": "Repository Basics",
+  "summary": "Top-level documentation and lightweight repository configuration.\n\nAgent mapper reason: These top-level files define how the repository is understood and used, without belonging to a runtime feature.",
+  "kind": "config",
+  "source": "agent-mapper",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "README.md",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "README.md",
+      "reason": "Primary project documentation."
+    },
+    {
+      "path": ".gitignore",
+      "reason": "Repository ignore policy."
+    },
+    {
+      "path": ".nvmrc",
+      "reason": "Node runtime version hint."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "AGENTS.md",
+      "reason": "Repository workflow expectations that influence documentation and setup."
+    },
+    {
+      "path": "commands/pre-merge.md",
+      "reason": "Verification workflow context for repository setup."
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "agent-mapped",
+    "documentation",
+    "repo-config",
+    "setup"
+  ],
+  "trustBoundaries": [
+    "filesystem",
+    "process-exec"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-config-9c89bf110d-5bfa2_0f3d87aa77",
+    "fnd_sig-feat-config-9c89bf110d-ef16c_8769b7d944"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260520T181554-fe4612",
+      "kind": "review",
+      "summary": "2 finding(s); prompt=22165 bytes; approxTokens=5498; includedFiles=5; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-20T18:18:52.734Z"
+    }
+  ],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:18:52.734Z"
+}

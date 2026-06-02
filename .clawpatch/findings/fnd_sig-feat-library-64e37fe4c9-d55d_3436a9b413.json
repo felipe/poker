@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-library-64e37fe4c9-d55d_3436a9b413",
+  "featureId": "feat_library_64e37fe4c9",
+  "title": "Simulation accepts invalid inputs that crash or return non-finite odds",
+  "category": "api-contract",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "contract-mismatch",
+  "evidence": [
+    {
+      "path": "js/simulate.js",
+      "startLine": 33,
+      "endLine": 43,
+      "symbol": "simulate",
+      "quote": "const v = VARIANTS[variant];"
+    },
+    {
+      "path": "js/simulate.js",
+      "startLine": 51,
+      "endLine": 53,
+      "symbol": "simulate",
+      "quote": "for (let i = 0; i < cardsNeeded; i++) {"
+    },
+    {
+      "path": "js/simulate.js",
+      "startLine": 70,
+      "endLine": 72,
+      "symbol": "simulate",
+      "quote": "const oppScore = evaluate(opp.concat(fullBoard));"
+    },
+    {
+      "path": "js/simulate.js",
+      "startLine": 83,
+      "endLine": 86,
+      "symbol": "simulate",
+      "quote": "winRate: wins / iterations,"
+    },
+    {
+      "path": "js/variants.js",
+      "startLine": 56,
+      "endLine": 63,
+      "symbol": "maxPlayersForVariant",
+      "quote": "const maxOpponents = Math.floor((52 - v.hole - v.board) / v.hole);"
+    }
+  ],
+  "reasoning": "simulate is an exported library entrypoint taking user-controlled variant, opponent count, revealed cards, and iteration count, but it does not validate the variant key, non-negative card requirements, deck capacity, or positive iterations. Impossible but representable inputs violate the documented SimResult contract: a too-large seven-card stud simulation deals past the deck and crashes in evaluate with an undefined card, an unknown variant throws a raw TypeError, and iterations=0 returns NaN for winRate and every distribution entry. variants.js shows deck capacity is known, but that invariant is not enforced at the simulation boundary.",
+  "reproduction": "node --input-type=module -e 'import {simulate} from \"./js/simulate.js\"; console.log(simulate([], [], 10, \"sevenstud\", 1))' throws TypeError: Cannot read properties of undefined (reading 'rank'). node --input-type=module -e 'import {simulate} from \"./js/simulate.js\"; console.log(simulate([], [], 1, \"holdem\", 0))' returns NaN values.",
+  "recommendation": "Validate at the start of simulate: require a known variant, finite integer iterations > 0, finite non-negative integer numOpponents, revealed counts within the variant limits, no duplicate cards, and cardsNeeded <= remaining.length. Throw a clear RangeError/TypeError or return an explicit failure shape before entering the shuffle loop.",
+  "whyTestsDoNotAlreadyCoverThis": "test/simulate.test.js only exercises valid variant names, positive iteration counts, and opponent counts within deck capacity. The shape test asserts 0..1 only for a positive 200-iteration Hold'em run.",
+  "suggestedRegressionTest": "Add simulate tests for iterations=0, unknown variant, and sevenstud with more opponents than maxPlayersForVariant(\"sevenstud\") - 1, asserting clear validation errors instead of NaN or raw TypeError crashes.",
+  "minimumFixScope": "js/simulate.js input validation plus focused tests in test/simulate.test.js.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-library-64e37fe4c9_d55d454626",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260520T181554-fe4612",
+  "createdAt": "2026-05-20T18:17:48.235Z",
+  "updatedAt": "2026-05-20T18:17:48.235Z"
+}

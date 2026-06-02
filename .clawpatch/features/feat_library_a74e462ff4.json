@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_library_a74e462ff4",
+  "title": "Hand Explanation Engine",
+  "summary": "Turns evaluated poker outcomes into user-facing explanations.\n\nAgent mapper reason: Explanation behavior is tightly coupled to evaluator result shape but has its own user-facing intent and tests.",
+  "kind": "library",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "js/explain.js",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "js/explain.js",
+      "reason": "Primary explanation logic for evaluated hands."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "The explanation layer depends on evaluator outputs and ranking semantics."
+    },
+    {
+      "path": "test/_cards.js",
+      "reason": "Shared card fixtures used to exercise explanation cases."
+    },
+    {
+      "path": "test/explain.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "reason": "nearby test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/explain.test.js",
+      "command": null
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "command": null
+    }
+  ],
+  "tags": [
+    "agent-mapped",
+    "poker",
+    "explanations",
+    "presentation-logic"
+  ],
+  "trustBoundaries": [
+    "user-input"
+  ],
+  "status": "pending",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:13:59.008Z"
+}

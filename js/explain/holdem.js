@@ -6,8 +6,113 @@ import {
   rankName, rankPlural, aOrAn, rankCounts, suitCounts,
   categoryOf, decap, drawPctText,
 } from "./core.js";
+import { rngFor, cardsKey, pick } from "../prose.js";
 
 /** @typedef {import("../evaluator.js").Card} Card */
+
+// Editorial tails for the made-hand read. The factual core (e.g. "Top pair,
+// kings, ace kicker") is fixed — it carries the tokens the invariants and the
+// inline glossary key off — and only this framing varies, drawn per situation
+// by a seeded RNG. Every entry in a pool must be faithful for that strength
+// bucket and must not contradict any threat line that can render alongside it.
+const MADE_TAILS = {
+  overpair: [
+    "strong.",
+    "a strong made hand.",
+    "you're ahead of one pair.",
+    "a commanding overpair.",
+  ],
+  underpair: [
+    "vulnerable to anyone who's hit a pair on the flop.",
+    "exposed if someone paired the board.",
+    "behind any top pair.",
+    "weak here; overcards on the board beat you if they connected.",
+  ],
+  boardPair: [
+    "you're effectively playing for kicker.",
+    "it's a kicker battle from here.",
+    "your hand plays the board's pair, so kickers decide it.",
+    "what you really hold is your kicker.",
+  ],
+  topPair: [
+    "a solid one-pair hand.",
+    "strong for one pair.",
+    "a good one-pair holding.",
+    "a decent top pair.",
+  ],
+  bottomPair: [
+    "weak, easily outkicked or outdrawn.",
+    "thin, easily outkicked.",
+    "a weak pair you can't get attached to.",
+    "marginal at best.",
+  ],
+  middlePair: [
+    "okay, but two board cards beat it.",
+    "marginal; overcards have it in trouble.",
+    "playable, though higher pairs are ahead.",
+    "a middling pair; tread carefully.",
+  ],
+  twoPair: [
+    "strong, but a paired board can already be a full house for someone.",
+    "strong, though a paired board threatens a boat.",
+    "a powerful two pair; mind a paired board.",
+    "strong, just wary of a board pair making a full house.",
+  ],
+  set: [
+    "Well hidden, very strong.",
+    "Disguised and powerful.",
+    "A big hand, and hard to read.",
+    "Concealed and strong.",
+  ],
+  boardTrips: [
+    "you have the trips, but so does everyone else. It comes down to kickers, and anyone with a pocket pair has a full house.",
+    "everyone at the table plays these trips — kickers decide it, and a pocket pair makes a full house.",
+    "the trips are shared; your kicker is what matters, and any pocket pair beats you with a boat.",
+    "you hold trips along with the whole table. Kickers break the tie, and a pocket pair already has a full house.",
+  ],
+  trips: [
+    "strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.",
+    "strong, though the paired board hands a full house to a matching pocket pair.",
+    "a strong hand, wary that the paired board makes a boat for some pocket pairs.",
+    "powerful, but a paired board means a pocket pair could already have a full house.",
+  ],
+  straight: [
+    "strong, though a flush can still beat you and a paired board threatens a full house.",
+    "strong, but flushes and full houses outrank it.",
+    "a strong made hand; higher straights, flushes, and boats are the worry.",
+    "strong, just mindful of flushes and a paired board.",
+  ],
+  flush: [
+    "strong. Watch for a higher flush or a paired board.",
+    "strong; a higher flush or a boat are the threats.",
+    "a powerful hand; only a bigger flush or a full house tops it.",
+    "strong, with a higher flush or a paired board the main concerns.",
+  ],
+  fullHouse: [
+    "almost always the winner. Quads or a higher boat are the only real threats.",
+    "a near-lock; only quads or a bigger boat beat it.",
+    "very strong; bigger full houses and quads are the only worry.",
+    "almost the winner, watching only for quads or a higher full house.",
+  ],
+  quads: [
+    "almost a lock.",
+    "all but unbeatable.",
+    "a virtual lock.",
+    "as good as it gets, short of a straight flush.",
+  ],
+  straightFlush: [
+    "the nuts.",
+    "unbeatable.",
+    "the best possible hand.",
+    "as good as poker gets.",
+  ],
+  highCardLead: [
+    "You haven't paired anything yet",
+    "Nothing's connected yet",
+    "No pair so far",
+    "Nothing made yet",
+  ],
+};
 
 /**
  * Single-snapshot Hold'em read: made hand, then any draws and board threats.
@@ -363,13 +468,16 @@ function holdemMadeHand(user, board) {
   const userRC = rankCounts(user);
   const boardRC = rankCounts(board);
   const allRC = rankCounts(all);
+  // One RNG per situation: the same (session, hole, board) always renders the
+  // same wording; a new session or different cards reshuffles the tail.
+  const rng = rngFor(`holdem|made|${cardsKey(user)}|${cardsKey(board)}`);
 
   if (category === 0) {
     // "Best card" used to read off the user's hole only — misleading when the
     // board has a higher card (everyone shares it at showdown). Use combined
     // high and standard "ace-high" / "king-high" phrasing.
     const high = all.reduce((a, b) => (a.rank > b.rank ? a : b));
-    return `You haven't paired anything yet — ${rankName(high.rank)}-high.`;
+    return `${pick(rng, MADE_TAILS.highCardLead)} — ${rankName(high.rank)}-high.`;
   }
 
   if (category === 1) {
@@ -377,11 +485,11 @@ function holdemMadeHand(user, board) {
     for (let r = 14; r >= 2; r--) if (allRC[r] === 2) { pr = r; break; }
     if (userRC[pr] === 2) {
       const maxBoard = Math.max(...board.map(c => c.rank));
-      if (pr > maxBoard) return `Your pocket ${rankPlural(pr)} are an overpair to the board — strong.`;
-      return `Your pocket ${rankPlural(pr)} are under the board's high card — vulnerable to anyone who's hit a pair on the flop.`;
+      if (pr > maxBoard) return `Your pocket ${rankPlural(pr)} are an overpair to the board — ${pick(rng, MADE_TAILS.overpair)}`;
+      return `Your pocket ${rankPlural(pr)} are under the board's high card — ${pick(rng, MADE_TAILS.underpair)}`;
     }
     if (boardRC[pr] === 2) {
-      return `The board has a pair of ${rankPlural(pr)} that doesn't involve your hand — you're effectively playing for kicker.`;
+      return `The board has a pair of ${rankPlural(pr)} that doesn't involve your hand — ${pick(rng, MADE_TAILS.boardPair)}`;
     }
     const boardSorted = board.map(c => c.rank).sort((a, b) => b - a);
     const idx = boardSorted.indexOf(pr);
@@ -398,31 +506,31 @@ function holdemMadeHand(user, board) {
         ? `, ${rankName(holeKicker.rank)} kicker`
         : `, with the ${rankName(holeKicker.rank)} in the hole`;
     }
-    if (idx === 0) return `Top pair, ${rankPlural(pr)}${kickerStr} — a solid one-pair hand.`;
-    if (idx === boardSorted.length - 1) return `Bottom pair, ${rankPlural(pr)}${kickerStr} — weak, easily outkicked or outdrawn.`;
-    return `Middle pair, ${rankPlural(pr)}${kickerStr} — okay, but two board cards beat it.`;
+    if (idx === 0) return `Top pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.topPair)}`;
+    if (idx === boardSorted.length - 1) return `Bottom pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.bottomPair)}`;
+    return `Middle pair, ${rankPlural(pr)}${kickerStr} — ${pick(rng, MADE_TAILS.middlePair)}`;
   }
 
   if (category === 2) {
     /** @type {number[]} */ const pairs = [];
     for (let r = 14; r >= 2; r--) if (allRC[r] >= 2) pairs.push(r);
     const [p1, p2] = pairs;
-    return `Two pair, ${rankPlural(p1)} and ${rankPlural(p2)} — strong, but a paired board can already be a full house for someone.`;
+    return `Two pair, ${rankPlural(p1)} and ${rankPlural(p2)} — ${pick(rng, MADE_TAILS.twoPair)}`;
   }
 
   if (category === 3) {
     let tr = 0;
     for (let r = 14; r >= 2; r--) if (allRC[r] === 3) { tr = r; break; }
-    if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. Well hidden, very strong.`;
-    if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — you have the trips, but so does everyone else. It comes down to kickers, and anyone with a pocket pair has a full house.`;
-    return `Trips, ${rankPlural(tr)} — strong, but the paired board already gives a full house to anyone with a pocket pair that matches another board card.`;
+    if (userRC[tr] === 2) return `A set of ${rankPlural(tr)} — your pocket pair hit the board. ${pick(rng, MADE_TAILS.set)}`;
+    if (boardRC[tr] === 3) return `Three ${rankPlural(tr)} on the board — ${pick(rng, MADE_TAILS.boardTrips)}`;
+    return `Trips, ${rankPlural(tr)} — ${pick(rng, MADE_TAILS.trips)}`;
   }
 
-  if (category === 4) return "A straight — strong, though a flush can still beat you and a paired board threatens a full house.";
-  if (category === 5) return "A flush — strong. Watch for a higher flush or a paired board.";
-  if (category === 6) return "A full house — almost always the winner. Quads or a higher boat are the only real threats.";
-  if (category === 7) return "Four of a kind — almost a lock.";
-  return "A straight flush — the nuts.";
+  if (category === 4) return `A straight — ${pick(rng, MADE_TAILS.straight)}`;
+  if (category === 5) return `A flush — ${pick(rng, MADE_TAILS.flush)}`;
+  if (category === 6) return `A full house — ${pick(rng, MADE_TAILS.fullHouse)}`;
+  if (category === 7) return `Four of a kind — ${pick(rng, MADE_TAILS.quads)}`;
+  return `A straight flush — ${pick(rng, MADE_TAILS.straightFlush)}`;
 }
 
 /**

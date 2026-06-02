@@ -60,6 +60,16 @@ export function rngFor(key) {
 }
 
 /**
+ * A stable, order-independent key for a set of cards — folded into a situation
+ * key so the same cards always seed the same way.
+ * @param {{rank:number, suit:number}[]} cards
+ * @returns {string}
+ */
+export function cardsKey(cards) {
+  return cards.map(c => c.rank * 4 + c.suit).sort((a, b) => a - b).join(".");
+}
+
+/**
  * Pick one element of a non-empty pool, deterministically from `rng`.
  * @template T
  * @param {() => number} rng

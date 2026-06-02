@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_test-suite_2d4bcc1b56",
+  "title": "JavaScript Test Suite",
+  "summary": "Standalone test coverage for evaluator, explanation, simulation, and variants behavior.\n\nAgent mapper reason: The tests and shared fixtures are coherent enough to review as their own quality surface, especially when changing test strategy or shared card fixtures.",
+  "kind": "test-suite",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "test/evaluator.test.js",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "test/_cards.js",
+      "reason": "Shared test fixtures for card-related cases."
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "reason": "Evaluator behavior tests."
+    },
+    {
+      "path": "test/explain.test.js",
+      "reason": "Explanation behavior tests."
+    },
+    {
+      "path": "test/simulate.test.js",
+      "reason": "Simulation behavior tests."
+    },
+    {
+      "path": "test/variants.test.js",
+      "reason": "Variant behavior tests."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "Implementation under evaluator tests."
+    },
+    {
+      "path": "js/explain.js",
+      "reason": "Implementation under explanation tests."
+    },
+    {
+      "path": "js/simulate.js",
+      "reason": "Implementation under simulation tests."
+    },
+    {
+      "path": "js/variants.js",
+      "reason": "Implementation under variant tests."
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/explain.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/simulate.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/variants.test.js",
+      "reason": "nearby test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/evaluator.test.js",
+      "command": null
+    },
+    {
+      "path": "test/explain.test.js",
+      "command": null
+    },
+    {
+      "path": "test/simulate.test.js",
+      "command": null
+    },
+    {
+      "path": "test/variants.test.js",
+      "command": null
+    }
+  ],
+  "tags": [
+    "agent-mapped",
+    "tests",
+    "javascript",
+    "poker"
+  ],
+  "trustBoundaries": [],
+  "status": "pending",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:13:59.008Z"
+}

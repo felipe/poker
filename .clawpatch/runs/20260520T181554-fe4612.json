@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260520T181554-fe4612",
+  "command": "review",
+  "args": [
+    "review",
+    "--limit",
+    "5"
+  ],
+  "rootPath": "/Users/felipe/Work/projects/felipe/poker/main",
+  "headSha": "9955865b65f04c5ee89005c33e07b67f019bf5df",
+  "startedAt": "2026-05-20T18:15:54.317Z",
+  "finishedAt": "2026-05-20T18:20:56.247Z",
+  "status": "completed",
+  "claimedFeatureIds": [
+    "feat_agent-tool_483bb0e54e",
+    "feat_config_98482e6221",
+    "feat_config_9c89bf110d",
+    "feat_library_3da47c4bf6",
+    "feat_library_64e37fe4c9"
+  ],
+  "findingIds": [
+    "fnd_sig-feat-library-64e37fe4c9-d55d_3436a9b413",
+    "fnd_sig-feat-config-9c89bf110d-5bfa2_0f3d87aa77",
+    "fnd_sig-feat-config-9c89bf110d-ef16c_8769b7d944",
+    "fnd_sig-feat-config-98482e6221-7662d_9a1cc9a266"
+  ],
+  "patchAttemptIds": [],
+  "errors": [
+    {
+      "message": "dropped 1 finding from feature feat_agent-tool_483bb0e54e at findings.0: evidence quote does not match file contents: AGENTS.md",
+      "code": "validation-drop"
+    },
+    {
+      "message": "dropped 1 finding from feature feat_agent-tool_483bb0e54e at findings.1: evidence quote does not match file contents: README.md",
+      "code": "validation-drop"
+    },
+    {
+      "message": "dropped 1 finding from feature feat_agent-tool_483bb0e54e at findings.2: evidence quote does not match file contents: commands/fix-issue.md",
+      "code": "validation-drop"
+    }
+  ]
+}

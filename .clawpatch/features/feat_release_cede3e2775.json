@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_release_cede3e2775",
+  "title": "Open Graph Preview",
+  "summary": "Social preview page and image asset for sharing the poker app.\n\nAgent mapper reason: The preview HTML and associated image serve release and sharing concerns, distinct from runtime app behavior. The image is not owned because it may be generated.",
+  "kind": "release",
+  "source": "agent-mapper",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "og-preview.html",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "og-preview.html",
+      "reason": "Source page for the social preview artifact."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "og.png",
+      "reason": "Generated or static preview image associated with the Open Graph preview; included as context only."
+    },
+    {
+      "path": "README.md",
+      "reason": "Project identity and public-facing description context."
+    },
+    {
+      "path": "css/base.css",
+      "reason": "May share visual language with the main app."
+    },
+    {
+      "path": "css/themes.css",
+      "reason": "May share theme variables or preview styling references."
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "agent-mapped",
+    "opengraph",
+    "preview",
+    "release-asset"
+  ],
+  "trustBoundaries": [],
+  "status": "pending",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:13:59.008Z"
+}

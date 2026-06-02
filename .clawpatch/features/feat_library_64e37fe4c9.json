@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_library_64e37fe4c9",
+  "title": "Simulation Engine",
+  "summary": "Runs poker outcome simulations and probability calculations.\n\nAgent mapper reason: Simulation is a bounded computational feature that depends on evaluator and variant semantics and has a dedicated test suite.",
+  "kind": "library",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "js/simulate.js",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "js/simulate.js",
+      "reason": "Primary simulation and odds calculation implementation."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "Simulation depends on evaluating generated or selected hands."
+    },
+    {
+      "path": "js/variants.js",
+      "reason": "Variant rules likely affect simulation behavior."
+    },
+    {
+      "path": "test/_cards.js",
+      "reason": "Shared card fixtures used by simulation tests."
+    },
+    {
+      "path": "test/simulate.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/variants.test.js",
+      "reason": "nearby test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/simulate.test.js",
+      "command": null
+    },
+    {
+      "path": "test/evaluator.test.js",
+      "command": null
+    },
+    {
+      "path": "test/variants.test.js",
+      "command": null
+    }
+  ],
+  "tags": [
+    "agent-mapped",
+    "poker",
+    "simulation",
+    "odds",
+    "probability"
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "concurrency"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-library-64e37fe4c9-d55d_3436a9b413"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260520T181554-fe4612",
+      "kind": "review",
+      "summary": "1 finding(s); prompt=32442 bytes; approxTokens=8094; includedFiles=7; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-20T18:17:48.237Z"
+    }
+  ],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:17:48.237Z"
+}

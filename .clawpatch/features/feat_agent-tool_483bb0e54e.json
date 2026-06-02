@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_agent-tool_483bb0e54e",
+  "title": "Repository Agent Workflows",
+  "summary": "Project-specific agent instructions and command workflow documents.\n\nAgent mapper reason: The agent instruction files and command documents define how automated contributors operate in this repository and should be reviewed as one operational package.",
+  "kind": "agent-tool",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "AGENTS.md",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "AGENTS.md",
+      "reason": "Primary repository instructions for agents working in this project."
+    },
+    {
+      "path": "commands/add-api.md",
+      "reason": "Documented workflow command for adding APIs."
+    },
+    {
+      "path": "commands/add-component.md",
+      "reason": "Documented workflow command for adding components."
+    },
+    {
+      "path": "commands/build-manifest.md",
+      "reason": "Documented workflow command for building verification manifests."
+    },
+    {
+      "path": "commands/discover-standards.md",
+      "reason": "Documented workflow command for extracting standards."
+    },
+    {
+      "path": "commands/distill.md",
+      "reason": "Documented workflow command for distillation."
+    },
+    {
+      "path": "commands/fix-issue.md",
+      "reason": "Documented workflow command for issue implementation."
+    },
+    {
+      "path": "commands/grill-me.md",
+      "reason": "Documented workflow command for plan interrogation."
+    },
+    {
+      "path": "commands/inject-standards.md",
+      "reason": "Documented workflow command for applying standards context."
+    },
+    {
+      "path": "commands/next.md",
+      "reason": "Documented workflow command for choosing next work."
+    },
+    {
+      "path": "commands/parry.md",
+      "reason": "Documented workflow command for addressing review comments."
+    },
+    {
+      "path": "commands/plan-product.md",
+      "reason": "Documented workflow command for product planning."
+    },
+    {
+      "path": "commands/pre-merge.md",
+      "reason": "Documented workflow command for mandatory verification."
+    },
+    {
+      "path": "commands/review.md",
+      "reason": "Documented workflow command for code review."
+    },
+    {
+      "path": "commands/session-start.md",
+      "reason": "Documented workflow command for session startup."
+    },
+    {
+      "path": "commands/shape-spec.md",
+      "reason": "Documented workflow command for shaping larger work."
+    },
+    {
+      "path": "commands/test.md",
+      "reason": "Documented workflow command for testing."
+    },
+    {
+      "path": "commands/verify-deploy.md",
+      "reason": "Documented workflow command for deployment verification."
+    },
+    {
+      "path": "commands/verify.md",
+      "reason": "Documented workflow command for verification review."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "README.md",
+      "reason": "Project context referenced by workflow instructions."
+    },
+    {
+      "path": ".gitignore",
+      "reason": "Repository hygiene context for generated and ignored files."
+    },
+    {
+      "path": ".nvmrc",
+      "reason": "Runtime version context for commands that execute JavaScript tooling."
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "agent-mapped",
+    "agent-workflows",
+    "documentation",
+    "commands"
+  ],
+  "trustBoundaries": [
+    "process-exec",
+    "filesystem",
+    "network",
+    "secrets",
+    "permissions"
+  ],
+  "status": "reviewed",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260520T181554-fe4612",
+      "kind": "review",
+      "summary": "0 finding(s); prompt=51216 bytes; approxTokens=12717; includedFiles=15; omittedFiles=7",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-20T18:19:33.019Z"
+    }
+  ],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:19:33.019Z"
+}

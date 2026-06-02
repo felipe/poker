@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_library_d89dd007aa",
+  "title": "Poker Variants",
+  "summary": "Defines supported poker variants and their rule differences.\n\nAgent mapper reason: Variant configuration is a distinct rules package with direct consumers in evaluation and simulation.",
+  "kind": "library",
+  "source": "agent-mapper",
+  "confidence": "high",
+  "entrypoints": [
+    {
+      "path": "js/variants.js",
+      "symbol": null,
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "js/variants.js",
+      "reason": "Primary source for variant definitions and rule configuration."
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "js/evaluator.js",
+      "reason": "Variant rules may affect evaluator expectations."
+    },
+    {
+      "path": "js/simulate.js",
+      "reason": "Simulation likely consumes variant definitions."
+    },
+    {
+      "path": "README.md",
+      "reason": "May describe supported variants and product behavior."
+    },
+    {
+      "path": "test/variants.test.js",
+      "reason": "nearby test"
+    },
+    {
+      "path": "test/simulate.test.js",
+      "reason": "nearby test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/variants.test.js",
+      "command": null
+    },
+    {
+      "path": "test/simulate.test.js",
+      "command": null
+    }
+  ],
+  "tags": [
+    "agent-mapped",
+    "poker",
+    "variants",
+    "rules"
+  ],
+  "trustBoundaries": [
+    "user-input"
+  ],
+  "status": "pending",
+  "lock": null,
+  "findingIds": [],
+  "patchAttemptIds": [],
+  "analysisHistory": [],
+  "createdAt": "2026-05-20T18:13:59.008Z",
+  "updatedAt": "2026-05-20T18:13:59.008Z"
+}
