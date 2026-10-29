@@ -193,6 +193,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .card .top { font-size: 1.5rem; line-height: 1; }
 .card .mid { font-size: 2.4rem; text-align: center; line-height: 1; }
 .card .bot { font-size: 1.5rem; text-align: left; line-height: 1; transform: rotate(180deg); }
+/* Wild cards (Ultimate Poker's threes): ringed in the accent colour with a
+   small WILD tag in the free top-right corner. */
+.card.wild {
+  position: relative;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.card.wild::after {
+  content: "WILD";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
 .card.placeholder {
   background: transparent;
   border: 2px dashed var(--border);
@@ -592,3 +609,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .reference-panel .card .bot { font-size: 0.56rem; letter-spacing: 0; }
 .reference-panel .card .mid { font-size: 0.8rem; }
 .reference-panel .card-row { gap: 3px; }
+/* The mini cards have no room for the WILD tag; the ring alone marks them. */
+.reference-panel .card.wild { outline-width: 2px; outline-offset: 1px; }
+.reference-panel .card.wild::after { content: none; }

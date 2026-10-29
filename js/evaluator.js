@@ -1,6 +1,8 @@
 // @ts-check
 // Card model, deck utilities, and the 5–7 card hand evaluator.
 
+import { VARIANTS } from "./variants.js";
+
 /**
  * @typedef {Object} Card
  * @property {number} rank  2..14 (11=J, 12=Q, 13=K, 14=A)
@@ -39,18 +41,34 @@ export function shuffle(arr) {
   return arr;
 }
 
+// Index 9, five of a kind, only exists in wild-card games (Ultimate Poker),
+// where it outranks a straight flush. The natural-deck evaluators never return it.
 export const CATEGORY_NAMES = [
   "High card", "One pair", "Two pair", "Three of a kind", "Straight",
-  "Flush", "Full house", "Four of a kind", "Straight flush",
+  "Flush", "Full house", "Four of a kind", "Straight flush", "Five of a kind",
 ];
+export const NUM_CATEGORIES = CATEGORY_NAMES.length;
 
 // Score = category * 100^5 + 5 kickers packed (2 digits each, ranks 2..14).
 // Used to divide a packed score back into its category index.
 export const CATEGORY_DIVISOR = 100 ** 5;
 
 /**
+ * Pack a category and up to five kicker ranks into one comparable integer.
+ * @param {number} category 0..9
+ * @param {number[]} kickers up to 5 ranks (2..14)
+ */
+function pack(category, kickers) {
+  const k = kickers.slice(0, 5);
+  while (k.length < 5) k.push(0);
+  let n = category;
+  for (const v of k) n = n * 100 + v;
+  return n;
+}
+
+/**
  * Returns a packed integer score for the best 5-card hand inside `cards`.
- * Higher beats lower. Accepts 5..7 cards.
+ * Higher beats lower. Accepts 5..8 cards.
  * @param {Card[]} cards
  * @returns {number}
  */
@@ -103,18 +121,6 @@ export function evaluate(cards) {
     else if (rankCount[r] === 2) pairs.push(r);
   }
 
-  /**
-   * @param {number} category 0..8
-   * @param {number[]} kickers up to 5 ranks (2..14)
-   */
-  function pack(category, kickers) {
-    const k = kickers.slice(0, 5);
-    while (k.length < 5) k.push(0);
-    let n = category;
-    for (const v of k) n = n * 100 + v;
-    return n;
-  }
-
   if (sfTop) return pack(8, [sfTop]);
   if (fours.length) {
     const four = fours[0];
@@ -124,7 +130,9 @@ export function evaluate(cards) {
   }
   if (threes.length && (threes.length >= 2 || pairs.length)) {
     const trip = threes[0];
-    const pairRank = threes[1] !== undefined ? threes[1] : pairs[0];
+    // With 8 cards (Ultimate Poker) you can hold two trips and a pair, e.g.
+    // 777-444-AA, so the pair can outrank the second trips.
+    const pairRank = Math.max(threes[1] || 0, pairs[0] || 0);
     return pack(6, [trip, pairRank]);
   }
   if (flushSuit >= 0) {
@@ -156,6 +164,118 @@ export function evaluate(cards) {
   for (let r = 14; r >= 2 && highs.length < 5; r--)
     if (rankCount[r] > 0) highs.push(r);
   return pack(0, highs);
+}
+
+/**
+ * Best 5-card hand when every card of `wildRank` is wild (Ultimate Poker plays
+ * threes wild). Same packed-integer format as `evaluate`, plus category 9,
+ * five of a kind, which beats a straight flush. Accepts 5 or more cards.
+ *
+ * A wild can stand in for any card, including a copy of one you already hold
+ * (that's how five of a kind happens). The one exception is a flush: a wild in
+ * a flush becomes the highest card of that suit you don't already have, so an
+ * A♥ plus a wild is A-K high, not a "double-ace" flush.
+ *
+ * With no wilds in the hand this is exactly `evaluate`. Otherwise it walks the
+ * categories from the top down and returns the first one the wilds can
+ * complete, with the highest ranks that category allows. The test suite checks
+ * it against a brute-force oracle that tries every substitution.
+ *
+ * @param {Card[]} cards
+ * @param {number} wildRank  2..14
+ * @returns {number}
+ */
+export function evaluateWild(cards, wildRank) {
+  let w = 0;
+  const count = new Array(15).fill(0);
+  /** @type {boolean[][]} */
+  const inSuit = [[], [], [], []];
+  const suitCount = [0, 0, 0, 0];
+  for (const c of cards) {
+    if (c.rank === wildRank) { w++; continue; }
+    count[c.rank]++;
+    suitCount[c.suit]++;
+    inSuit[c.suit][c.rank] = true;
+  }
+  if (w === 0) return evaluate(cards);
+
+  /** Highest natural rank other than the excluded ones, `n` of them. @param {number} n @param {number[]} exclude */
+  const kickers = (n, exclude) => {
+    /** @type {number[]} */ const out = [];
+    for (let r = 14; r >= 2 && out.length < n; r--)
+      if (count[r] > 0 && !exclude.includes(r)) out.push(r);
+    return out;
+  };
+  /**
+   * Highest straight top reachable with the wilds, where `has(r)` says whether
+   * a natural of rank r is available. At top = 5 the run starts at rank 1,
+   * read as the ace, so the wheel (A-2-3-4-5) is covered.
+   * @param {(r: number) => boolean} has
+   */
+  const straightTop = has => {
+    for (let top = 14; top >= 5; top--) {
+      let missing = 0;
+      for (let r = top - 4; r <= top; r++) if (!has(r === 1 ? 14 : r)) missing++;
+      if (missing <= w) return top;
+    }
+    return 0;
+  };
+
+  // Five of a kind.
+  for (let r = 14; r >= 2; r--) if (count[r] > 0 && count[r] + w >= 5) return pack(9, [r]);
+
+  // Straight flush: best top across the four suits.
+  let sfTop = 0;
+  for (let s = 0; s < 4; s++) {
+    if (suitCount[s] + w < 5) continue;
+    const top = straightTop(r => inSuit[s][r] === true);
+    if (top > sfTop) sfTop = top;
+  }
+  if (sfTop) return pack(8, [sfTop]);
+
+  // Four of a kind. count + w can't exceed 4 here (that was five of a kind),
+  // so every wild goes into the quads and the kicker is a natural card.
+  for (let r = 14; r >= 2; r--) {
+    if (count[r] > 0 && count[r] + w >= 4) return pack(7, [r, ...kickers(1, [r])]);
+  }
+
+  // Full house: highest trips rank, then highest pair rank, that the wilds can fill.
+  for (let t = 14; t >= 2; t--) {
+    for (let p = 14; p >= 2; p--) {
+      if (p === t) continue;
+      const need = Math.max(0, 3 - count[t]) + Math.max(0, 2 - count[p]);
+      if (need <= w) return pack(6, [t, p]);
+    }
+  }
+
+  // Flush: in each suit with enough cards, walk down from the ace taking the
+  // natural card where you hold it and a wild where you don't.
+  let bestFlush = 0;
+  for (let s = 0; s < 4; s++) {
+    if (suitCount[s] + w < 5) continue;
+    /** @type {number[]} */ const ranks = [];
+    let wildsLeft = w;
+    for (let r = 14; r >= 2 && ranks.length < 5; r--) {
+      if (inSuit[s][r]) ranks.push(r);
+      else if (wildsLeft > 0) { ranks.push(r); wildsLeft--; }
+    }
+    const score = pack(5, ranks);
+    if (score > bestFlush) bestFlush = score;
+  }
+  if (bestFlush) return bestFlush;
+
+  const straight = straightTop(r => count[r] > 0);
+  if (straight) return pack(4, [straight]);
+
+  for (let r = 14; r >= 2; r--) {
+    if (count[r] > 0 && count[r] + w >= 3) return pack(3, [r, ...kickers(2, [r])]);
+  }
+
+  // Two wilds, or one wild with a natural pair, already made trips above. So
+  // a hand that reaches here holds one wild and no pair: the wild pairs the
+  // highest card. Two pair is never the best use of a wild.
+  const top = kickers(1, [])[0];
+  return pack(1, [top, ...kickers(3, [top])]);
 }
 
 /**
@@ -199,8 +319,10 @@ export function evaluateOmaha(hole, board) {
 /**
  * Packed best-hand score for a holding under the rules of a given variant.
  * This is the one place that owns *which evaluator a variant uses*: Omaha is
- * the exactly-2-hole + exactly-3-board rule (`evaluateOmaha`); Hold'em, 5-Card
- * Draw and 7-Stud are all "best 5 of hole+board" (`evaluate`). The simulator
+ * the exactly-2-hole + exactly-3-board rule (`evaluateOmaha`); a variant with a
+ * `wildRank` (Ultimate Poker) is best 5 of hole+board with that rank wild
+ * (`evaluateWild`); Hold'em, 5-Card Draw and 7-Stud are all "best 5 of
+ * hole+board" (`evaluate`). The simulator
  * (which compares raw scores) and the prose layer (which buckets the score
  * into a category) both route through this, so they can't disagree on the rule.
  *
@@ -211,5 +333,7 @@ export function evaluateOmaha(hole, board) {
  */
 export function scoreFor(variant, hole, board) {
   if (variant === "omaha") return evaluateOmaha(hole, board);
+  const wildRank = VARIANTS[variant]?.wildRank;
+  if (wildRank) return evaluateWild(hole.concat(board), wildRank);
   return evaluate(hole.concat(board));
 }

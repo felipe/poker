@@ -46,12 +46,17 @@ export function dismissOnOutside(insideSelector, dismiss) {
  * defined, so every surface (the hand, the board, and reference tables) renders
  * a card identically. Reuse it rather than re-stating the markup.
  *
+ * A wild card (Ultimate Poker's threes) gets the `wild` class, which the
+ * stylesheet uses to badge it, plus a screen-reader label.
+ *
  * @param {Card} card
+ * @param {boolean} [wild]
  * @returns {HTMLDivElement}
  */
-export function cardEl(card) {
+export function cardEl(card, wild = false) {
   const div = document.createElement("div");
-  div.className = "card " + SUIT_COLOR[SUITS[card.suit]];
+  div.className = "card " + SUIT_COLOR[SUITS[card.suit]] + (wild ? " wild" : "");
+  if (wild) div.title = "Wild";
   const r = rankToStr(card.rank);
   const s = SUIT_GLYPH[SUITS[card.suit]];
   div.innerHTML = `<div class="top">${r}${s}</div><div class="mid">${s}</div><div class="bot">${r}${s}</div>`;
@@ -72,8 +77,9 @@ export function placeholderEl() {
  * @param {HTMLElement} target
  * @param {Card[]} cards
  * @param {number} placeholderCount
+ * @param {number} [wildRank]  cards of this rank render as wild
  */
-export function renderCardsInto(target, cards, placeholderCount) {
+export function renderCardsInto(target, cards, placeholderCount, wildRank) {
   target.innerHTML = "";
   const empty = cards.length === 0;
   const count = empty ? placeholderCount : cards.length;
@@ -84,7 +90,9 @@ export function renderCardsInto(target, cards, placeholderCount) {
     const row = document.createElement("div");
     row.className = "card-row";
     for (let i = 0; i < rowSize; i++) {
-      row.appendChild(empty ? placeholderEl() : cardEl(cards[idx++]));
+      if (empty) { row.appendChild(placeholderEl()); continue; }
+      const c = cards[idx++];
+      row.appendChild(cardEl(c, c.rank === wildRank));
     }
     target.appendChild(row);
   }
@@ -229,7 +237,7 @@ function threatsTable(items) {
  * Render the "Hands you'll likely make" / "Your hand" bar chart.
  *
  * @param {HTMLElement} target
- * @param {number[]} distribution  length 9, indexed by category 0..8
+ * @param {number[]} distribution  indexed by category (see CATEGORY_NAMES)
  * @param {string} variant
  * @param {Card[]} userAtSim
  * @param {Card[]} boardAtSim

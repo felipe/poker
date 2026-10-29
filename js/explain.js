@@ -5,7 +5,7 @@
 // here is a deterministic function of the cards.
 //
 // This module is the public facade + cross-variant orchestration. The actual
-// per-variant narrative lives in ./explain/{holdem,omaha,draw}.js, with shared
+// per-variant narrative lives in ./explain/{holdem,omaha,ultimate,draw}.js, with shared
 // primitives in ./explain/core.js. Adding a variant means adding a module and
 // one entry in the SNAPSHOTS table below — not growing this file.
 
@@ -13,6 +13,7 @@ import { categoryFor, decap } from "./explain/core.js";
 import { rngFor, pick } from "./prose.js";
 import { holdemSnapshot, holdemTrajectoryParagraphs, recapHand } from "./explain/holdem.js";
 import { omahaSnapshot } from "./explain/omaha.js";
+import { ultimateSnapshot } from "./explain/ultimate.js";
 import { noBoardRead } from "./explain/draw.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
@@ -28,6 +29,7 @@ export { recapHand };
 const SNAPSHOTS = {
   holdem: holdemSnapshot,
   omaha: omahaSnapshot,
+  ultimate: ultimateSnapshot,
 };
 
 /** @param {Card[]} user @param {Card[]} board @param {string} variant */
@@ -78,7 +80,7 @@ export function explainTrajectory(ctx) {
   if (variant === "holdem") {
     paragraphs.push(...holdemTrajectoryParagraphs(trajectory));
   } else {
-    // 5-Card Draw, 7-Stud, and Omaha — each street is a fresh snapshot. (For
+    // 5-Card Draw, 7-Stud, Omaha, and Ultimate — each street is a fresh snapshot. (For
     // Omaha we don't yet do Hold'em's between-street "improved / bricked /
     // picked up a draw" diffing; that's a follow-up.) Label each one so the
     // progression is clear.
@@ -140,7 +142,7 @@ export function betterHandsCallout(ctx) {
   const userCategory = categoryFor(variant, last.user, last.board);
 
   const items = /** @type {Array<{noun: string, p: number, pct: number}>} */ ([]);
-  for (let c = 0; c < 9; c++) {
+  for (let c = 0; c < last.beatenBy.length; c++) {
     const p = last.beatenBy[c];
     if (!Number.isFinite(p) || p < 0.01) continue;
     items.push({ noun: threatNoun(c, userCategory), p, pct: Math.round(p * 100) });
@@ -159,8 +161,8 @@ export function betterHandsCallout(ctx) {
  * pair, etc.) — phrased that way so "a pair (8%)" doesn't read as redundant
  * when the user also has a pair.
  *
- * @param {number} oppCat  0..8
- * @param {number} userCat 0..8
+ * @param {number} oppCat  0..9
+ * @param {number} userCat 0..9
  */
 function threatNoun(oppCat, userCat) {
   const same = oppCat === userCat;
@@ -174,6 +176,7 @@ function threatNoun(oppCat, userCat) {
     case 6: return same ? "a higher full house" : "a full house";
     case 7: return same ? "a higher four of a kind" : "four of a kind";
     case 8: return same ? "a higher straight flush" : "a straight flush";
+    case 9: return same ? "a higher five of a kind" : "five of a kind";
   }
   return "";
 }

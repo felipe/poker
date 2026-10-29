@@ -5,8 +5,8 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { VARIANTS, ROW_LAYOUTS, rowLayout, maxPlayersForVariant } from "../js/variants.js";
 
-test("VARIANTS exports all four game types", () => {
-  assert.equal(Object.keys(VARIANTS).sort().join(","), "fivecard,holdem,omaha,sevenstud");
+test("VARIANTS exports all five game types", () => {
+  assert.equal(Object.keys(VARIANTS).sort().join(","), "fivecard,holdem,omaha,sevenstud,ultimate");
 });
 
 test("each variant has the expected shape", () => {

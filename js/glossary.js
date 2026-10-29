@@ -42,6 +42,9 @@ export const GLOSSARY = {
   "double-suited": { def: "An Omaha hand with two separate pairs of suits, giving two different flush possibilities.", games: ["omaha"] },
   "single-suited": { def: "An Omaha hand with exactly two cards of one suit (one flush possibility).", games: ["omaha"] },
   "wrap": { def: "An Omaha straight draw that uses all four hole cards, often with far more outs than a Hold'em draw.", games: ["omaha"] },
+  // Wild-card games.
+  "wild": { def: "A card that stands in for any card you need. In Ultimate Poker every three is wild.", games: ["ultimate"] },
+  "five of a kind": { def: "Five cards of one rank, only possible with wild cards. It outranks a straight flush.", games: ["ultimate"] },
 };
 
 const REGEX_SPECIAL = /[.*+?^${}()|[\]\\]/g;

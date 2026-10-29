@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { analyzeStreet, analyzeHand } from "../js/analysis.js";
 import { hand } from "./_cards.js";
+import { NUM_CATEGORIES } from "../js/evaluator.js";
 
 // With zero opponents the user can't be beaten, so winRate is exactly 1 every
 // iteration — deterministic, which lets us assert the verdict wiring exactly.
@@ -49,7 +50,7 @@ test("analyzeHand: each street carries the simulator fields the chart needs", ()
   const out = analyzeHand(history, 1, "fivecard", 0.5, 200);
   const street = out.trajectory[0];
   assert.equal(street.label, "Hand");
-  assert.ok(Array.isArray(street.distribution) && street.distribution.length === 9);
-  assert.ok(Array.isArray(street.beatenBy) && street.beatenBy.length === 9);
+  assert.ok(Array.isArray(street.distribution) && street.distribution.length === NUM_CATEGORIES);
+  assert.ok(Array.isArray(street.beatenBy) && street.beatenBy.length === NUM_CATEGORIES);
   assert.ok(street.winRate >= 0 && street.winRate <= 1);
 });
