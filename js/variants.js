@@ -16,6 +16,8 @@
  * @property {number} hole   total cards a player holds at showdown
  * @property {number} board  total community cards at showdown
  * @property {Street[]} streets
+ * @property {number} [wildRank]  every card of this rank is wild (2..14)
+ * @property {string} [meta]      one-line rules summary for the game header
  */
 
 /** @type {Record<string, Variant>} */
@@ -36,6 +38,16 @@ export const VARIANTS = {
       { label: "Flop",     foldText: "on the flop",  user: 4, board: 3 },
       { label: "Turn",     foldText: "on the turn",  user: 4, board: 4 },
       { label: "River",    foldText: "on the river", user: 4, board: 5 },
+    ],
+  },
+  ultimate: {
+    name: "Ultimate Poker", hole: 3, board: 5, wildRank: 3,
+    meta: "3 hole cards, threes wild",
+    streets: [
+      { label: "Pre-flop", foldText: "pre-flop",     user: 3, board: 0 },
+      { label: "Flop",     foldText: "on the flop",  user: 3, board: 3 },
+      { label: "Turn",     foldText: "on the turn",  user: 3, board: 4 },
+      { label: "River",    foldText: "on the river", user: 3, board: 5 },
     ],
   },
   fivecard: {

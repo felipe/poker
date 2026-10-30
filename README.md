@@ -57,6 +57,7 @@ There's no build step. Plain HTML/CSS/JS that runs straight from the browser.
 
 - **Texas Hold'em** — 2 hole + 5 community. Decisions at Pre-flop, Flop, Turn, River.
 - **Pot-Limit Omaha** — 4 hole + 5 community, but you must use *exactly* 2 hole cards and 3 board cards. Decisions at Pre-flop, Flop, Turn, River. (One ace of a suit in hand on a 4-suited board is **not** a flush — the app's prose calls that trap out.)
+- **Ultimate Poker** — 3 hole + 5 community, Hold'em streets, and **every three is wild**. Your hand is the best five of your eight cards. Five of a kind is the top hand, above a straight flush. A wild can copy a card you hold (that's how five of a kind happens), except in a flush, where it becomes the highest card of that suit you don't have. Wild cards are badged on the table. Exact hand odds, starting-hand equities and "what wins" tables are in [docs/ultimate-odds.md](./docs/ultimate-odds.md).
 - **5-Card Draw** — 5 cards, one decision.
 - **7-Card Stud** — 7 cards across 3rd → 7th street. One decision per street.
 
@@ -77,15 +78,23 @@ The Players selector auto-caps based on what the deck can support after your han
 
 ### Hand evaluator
 
-`evaluate(cards)` accepts 5–7 cards and returns a packed integer where higher beats lower:
+`evaluate(cards)` accepts 5–8 cards and returns a packed integer where higher beats lower:
 
 ```
 score = category × 100⁵ + k₁ × 100⁴ + k₂ × 100³ + … + k₅
 ```
 
-`category` is 0..8 (high card → straight flush). `k₁..k₅` are kicker ranks (2..14). Packing into a single integer makes comparisons one `>` instead of a structured tie-break.
+`category` is 0..8 (high card → straight flush), or 9 for five of a kind, which only wild-card hands reach. `k₁..k₅` are kicker ranks (2..14). Packing into a single integer makes comparisons one `>` instead of a structured tie-break.
 
-`evaluateOmaha(hole, board)` enforces the Omaha rule by taking the max over all C(4,2)×C(5,3) = 60 two-hole + three-board combinations, in the same packed format. `scoreFor(variant, hole, board)` is the one place that picks `evaluate` vs `evaluateOmaha`, so the simulator and the prose explainer can't disagree on the rule.
+`evaluateOmaha(hole, board)` enforces the Omaha rule by taking the max over all C(4,2)×C(5,3) = 60 two-hole + three-board combinations, in the same packed format.
+
+`evaluateWild(cards, wildRank)` scores a hand with one rank wild. It walks the categories from five of a kind (category 9) down and returns the first one the wilds can complete, at the highest ranks that category allows. It has two independent checks. `scripts/verify-wild.js` compares it with a brute-force oracle (`test/_wild-oracle.js`, which tries every substitution) on all 2,598,960 five-card hands. Run with `--wild=2`, it also reproduces Wizard of Odds' published Deuces Wild frequency table exactly.
+
+`scoreFor(variant, hole, board)` is the one place that picks `evaluate`, `evaluateOmaha` or `evaluateWild` (for a variant with a `wildRank`), so the simulator and the prose explainer can't disagree on the rule.
+
+### Ultimate Poker odds
+
+`node scripts/ultimate-odds.js` scores all C(52,8) = 752,538,150 eight-card hands with the app's evaluator across worker threads (about a minute on a 10-core laptop). It writes the exact counts to `test/fixtures/ultimate-odds.json` and readable tables to [docs/ultimate-odds.md](./docs/ultimate-odds.md). The unit suite checks that the simulator's dealt hands match those exact counts, so a change to the evaluator, the simulator or the variant config that shifts the odds fails the build until the table is regenerated.
 
 ### Fair-share threshold
 
@@ -128,6 +137,7 @@ js/
     core.js              shared helpers: rank/suit naming, counts, scoreFor → category
     holdem.js            Texas Hold'em prose (snapshot, trajectory, recap)
     omaha.js             Pot-Limit Omaha prose
+    ultimate.js          Ultimate Poker (threes wild) prose
     draw.js              5-Card Draw + 7-Stud prose
 themes/                on-demand stylesheets for designer themes
   vegas-neon.css         neon marquee
@@ -136,8 +146,16 @@ themes/                on-demand stylesheets for designer themes
   brutalist.css          swiss/data-sheet monospace on paper (default)
   brutalist-dark.css     companion dark variant
   editorial.css          serif magazine spread
+scripts/
+  verify-wild.js         exhaustive wild-evaluator check vs the brute-force oracle
+  ultimate-odds.js       exact Ultimate Poker odds → docs/ + test/fixtures/
+docs/
+  ultimate-odds.md       generated odds tables for Ultimate Poker
 test/                  unit tests, run via `node --test`
   _cards.js              shared card-string parser used by the suites
+  _wild-oracle.js        brute-force wild-card scorer used as a reference
+  fixtures/              exact odds the simulator is checked against
+  ultimate.test.js       wild evaluator, oracle sample, odds, sims, prose
   evaluator.test.js      hand evaluator + deck/shuffle + Omaha 2+3 rule
   variants.test.js       VARIANTS shape, player cap, row layout
   simulate.test.js       Monte Carlo sanity bounds
@@ -222,6 +240,7 @@ Coverage:
 - `test/verdict.test.js` — the play/fold/toss-up decision model and the ±1pp band boundary.
 - `test/analysis.test.js` — pure hand analysis (street + full-hand), verdict derivation, and the empty-history guard.
 - `test/stats.test.js` — decision recording, agreement/bias classification, summary rollup, and storage round-trip (with an in-memory stub).
+- `test/ultimate.test.js` — Ultimate Poker: each wild-card rule, a seeded sample of 5- and 8-card hands checked against the brute-force oracle, the simulator against the exact odds table, equity sanity bounds, and prose goldens.
 - `test/glossary.test.js` — the term matcher: word boundaries, case-insensitivity, first-occurrence-per-call, and phrase-wins-over-word overlap resolution.
 
 The UI / DOM layer (`ui.js`, `main.js`) is not unit-tested — that path is covered by manual verification below.

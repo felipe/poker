@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { GLOSSARY, findGlossaryTerms } from "../js/glossary.js";
 
-const KNOWN_GAMES = new Set(["holdem", "omaha", "fivecard", "sevenstud"]);
+const KNOWN_GAMES = new Set(["holdem", "omaha", "fivecard", "sevenstud", "ultimate"]);
 
 const slice = (text, m) => text.slice(m.start, m.end);
 

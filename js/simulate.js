@@ -2,7 +2,7 @@
 // Monte Carlo simulator: deals out the remaining cards repeatedly and
 // reports win rate + a distribution of final hand categories.
 
-import { makeDeck, scoreFor, CATEGORY_DIVISOR } from "./evaluator.js";
+import { makeDeck, scoreFor, CATEGORY_DIVISOR, NUM_CATEGORIES } from "./evaluator.js";
 import { VARIANTS } from "./variants.js";
 
 /** @typedef {import("./evaluator.js").Card} Card */
@@ -10,10 +10,11 @@ import { VARIANTS } from "./variants.js";
 /**
  * @typedef {Object} SimResult
  * @property {number} winRate        0..1 (ties contribute 1/winners)
- * @property {number[]} distribution length 9, indexed by category 0..8.
+ * @property {number[]} distribution length NUM_CATEGORIES, indexed by
+ *                                   category (0..9, see CATEGORY_NAMES).
  *                                   How often the user lands in each hand
  *                                   category.
- * @property {number[]} beatenBy     length 9, indexed by category 0..8. How
+ * @property {number[]} beatenBy     length NUM_CATEGORIES, by category. How
  *                                   often the user is beaten AND the
  *                                   strongest beating opponent had a hand of
  *                                   that category. Sum ≈ 1 - winRate (off by
@@ -63,8 +64,8 @@ export function simulate(userRevealed, boardRevealed, numOpponents, variant, ite
   }
 
   let wins = 0;
-  const distribution = new Array(9).fill(0);
-  const beatenBy = new Array(9).fill(0);
+  const distribution = new Array(NUM_CATEGORIES).fill(0);
+  const beatenBy = new Array(NUM_CATEGORIES).fill(0);
 
   for (let iter = 0; iter < iterations; iter++) {
     // Partial Fisher–Yates: only swap the prefix we'll actually use.

@@ -48,7 +48,7 @@ export function categoryOf(cards) {
 }
 
 /**
- * Hand category (0..8) under the rules of a given variant — the bucketed form
+ * Hand category (0..9) under the rules of a given variant — the bucketed form
  * of `scoreFor`. The variant→evaluator decision itself lives in `scoreFor`
  * (evaluator.js), so the prose category and the simulator's raw score can't
  * disagree on the rule (e.g. the prose calling a hand a flush that the Omaha

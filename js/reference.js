@@ -57,12 +57,13 @@ function parseCard(str) {
 }
 
 // The standard nine categories, strongest first (straight flush capped by the
-// royal). `cards` lists only the cards that DEFINE the category; the remaining
+// royal), topped by five of a kind for the wild-card game. `cards` lists only the cards that DEFINE the category; the remaining
 // slots up to five render as "any card" placeholders, so a learner sees exactly
 // what makes the hand (four aces + one any card, not four aces + a specific
 // kicker that looks like it matters).
 const HAND_CARDS = 5;
 const HAND_RANKINGS = [
+  { name: "Five of a kind", note: "Wild-card games only (Ultimate Poker): five of one rank, using wilds. Beats a straight flush.", cards: ["Ah", "Ad", "As", "Ac", "3h"], wildRank: 3 },
   { name: "Straight flush", note: "Five in a row, all one suit. The top end is the royal flush, A-K-Q-J-10.", cards: ["As", "Ks", "Qs", "Js", "Ts"] },
   { name: "Four of a kind", note: "All four cards of one rank.", cards: ["Ah", "Ad", "As", "Ac"] },
   { name: "Full house", note: "Three of a kind plus a pair.", cards: ["Kh", "Kd", "Ks", "5c", "5h"] },
@@ -92,7 +93,10 @@ export function renderHandRankings(target) {
 
     const cards = document.createElement("div");
     cards.className = "ref-rank-cards card-row";
-    for (const c of r.cards) cards.appendChild(cardEl(parseCard(c)));
+    for (const c of r.cards) {
+      const card = parseCard(c);
+      cards.appendChild(cardEl(card, card.rank === r.wildRank));
+    }
     for (let i = r.cards.length; i < HAND_CARDS; i++) {
       const ph = placeholderEl();
       ph.setAttribute("aria-label", "any card");

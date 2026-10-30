@@ -69,14 +69,15 @@ function isFinalStreet() { return streetIdx === currentVariant().streets.length 
 function renderGameHeader() {
   const n = parseInt(playersSel.value, 10);
   gameNameEl.textContent = currentVariant().name;
-  gameMetaEl.textContent = `${n} ${n === 1 ? "player" : "players"}`;
+  const meta = currentVariant().meta;
+  gameMetaEl.textContent = `${n} ${n === 1 ? "player" : "players"}${meta ? ` · ${meta}` : ""}`;
 }
 
 function renderHand() {
   const v = currentVariant();
   const firstUser = v.streets[0].user;
-  renderCardsInto(cardsEl, userRevealed, firstUser);
-  renderCardsInto(boardEl, boardRevealed, 0);
+  renderCardsInto(cardsEl, userRevealed, firstUser, v.wildRank);
+  renderCardsInto(boardEl, boardRevealed, 0, v.wildRank);
   if (boardRevealed.length > 0) boardEl.classList.remove("hidden");
   else boardEl.classList.add("hidden");
 }

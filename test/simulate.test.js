@@ -7,6 +7,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { simulate } from "../js/simulate.js";
+import { NUM_CATEGORIES } from "../js/evaluator.js";
 import { hand } from "./_cards.js";
 
 const ITERATIONS = 5000;
@@ -16,12 +17,12 @@ test("simulate returns { winRate, distribution, beatenBy } with expected shape",
   assert.equal(typeof res.winRate, "number");
   assert.ok(res.winRate >= 0 && res.winRate <= 1);
   assert.ok(Array.isArray(res.distribution));
-  assert.equal(res.distribution.length, 9);
+  assert.equal(res.distribution.length, NUM_CATEGORIES);
   // distribution sums to 1.0 (within float epsilon)
   const distSum = res.distribution.reduce((a, b) => a + b, 0);
   assert.ok(Math.abs(distSum - 1) < 0.001, `distribution sums to ${distSum}, not 1.0`);
   assert.ok(Array.isArray(res.beatenBy));
-  assert.equal(res.beatenBy.length, 9);
+  assert.equal(res.beatenBy.length, NUM_CATEGORIES);
   // beatenBy + winRate ≈ 1 (off by the tie share, which goes into winRate
   // as fractional wins rather than into beatenBy)
   const beatenSum = res.beatenBy.reduce((a, b) => a + b, 0);
